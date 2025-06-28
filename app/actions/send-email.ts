@@ -248,10 +248,10 @@ export async function sendContactEmail(prevState: any, formData: FormData) {
     console.log("📤 Försöker skicka e-post till Glada Fönster...")
 
     try {
-      // Send email to Glada Fönster
+      // Send email to Glada Fönster (both addresses)
       const { data, error } = await resend.emails.send({
         from: EMAIL_CONFIG.from,
-        to: EMAIL_CONFIG.to,
+        to: EMAIL_CONFIG.to, // This will send to both info@gladafonster.se and mmgladafonster@gmail.com
         replyTo: email, // Reply to customer's email
         subject: `🏠 Ny offertförfrågan från ${firstName} ${lastName} - Glada Fönster`,
         html: gladaFonsterEmailHtml,

@@ -21,7 +21,7 @@ export const resend = apiKey && apiKey.startsWith("re_") ? new Resend(apiKey) : 
 // E-postkonfiguration
 export const EMAIL_CONFIG = {
   from: "info@gladafonster.se", // Se till att denna domän är verifierad i Resend
-  to: ["mmgladafonster@gmail.com"],
+  to: ["info@gladafonster.se", "mmgladafonster@gmail.com"], // Båda adresserna får e-post
   replyTo: "info@gladafonster.se",
 }
 

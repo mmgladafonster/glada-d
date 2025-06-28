@@ -1,97 +1,132 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useState } from "react"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent } from "@/components/ui/card"
+import { useActionState } from "react"
 import { sendContactEmail } from "../actions/send-email"
+import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
 
 export default function TestEmailPage() {
-  const [result, setResult] = useState<any>(null)
-  const [loading, setLoading] = useState(false)
-
-  const testEmail = async () => {
-    setLoading(true)
-    setResult(null)
-
-    // Create test form data
-    const formData = new FormData()
-    formData.append("firstName", "Test")
-    formData.append("lastName", "Användare")
-    formData.append("email", "test@example.com")
-    formData.append("phone", "070-123 45 67")
-    formData.append("address", "Testgatan 123, Göteborg")
-    formData.append("propertyType", "Villa")
-    formData.append("description", "Detta är ett test av e-postfunktionen")
-
-    try {
-      const response = await sendContactEmail(null, formData)
-      setResult(response)
-    } catch (error) {
-      setResult({
-        success: false,
-        message: `Fel: ${error}`,
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [state, formAction, isPending] = useActionState(sendContactEmail, {
+    success: false,
+    message: "",
+  })
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-2xl mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle>🧪 E-post Testsida</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Testa E-postfunktionalitet</h3>
-              <p className="text-gray-600">
-                Detta kommer att skicka ett test-e-postmeddelande till mmgladafonster@gmail.com med hjälp av
-                kontaktformulärsåtgärden.
-              </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <Header />
 
-              <Button onClick={testEmail} disabled={loading} className="w-full">
-                {loading ? "Skickar Test-E-post..." : "Skicka Test-E-post"}
-              </Button>
-            </div>
+      <section className="py-12 md:py-20">
+        <div className="container mx-auto px-4">
+          <div className="max-w-2xl mx-auto">
+            <Card className="border-0 shadow-2xl bg-white/80 backdrop-blur-sm">
+              <CardContent className="p-6 md:p-8">
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">Test Email Functionality</h1>
+                
+                {state?.message && (
+                  <div
+                    className={`mb-6 p-4 rounded-lg ${
+                      state.success 
+                        ? "bg-green-50 border border-green-200 text-green-800" 
+                        : "bg-red-50 border border-red-200 text-red-800"
+                    }`}
+                  >
+                    {state.message}
+                  </div>
+                )}
 
-            {result && (
-              <div
-                className={`p-4 rounded-lg ${
-                  result.success
-                    ? "bg-green-50 border border-green-200 text-green-800"
-                    : "bg-red-50 border border-red-200 text-red-800"
-                }`}
-              >
-                <h4 className="font-semibold mb-2">{result.success ? "✅ Lyckades" : "❌ Fel"}</h4>
-                <p>{result.message}</p>
-              </div>
-            )}
+                <form action={formAction} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Förnamn *</label>
+                      <Input
+                        name="firstName"
+                        placeholder="Test"
+                        required
+                        disabled={isPending}
+                        className="border-2 border-gray-200 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Efternamn *</label>
+                      <Input
+                        name="lastName"
+                        placeholder="User"
+                        required
+                        disabled={isPending}
+                        className="border-2 border-gray-200 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">E-post *</label>
+                    <Input
+                      name="email"
+                      type="email"
+                      placeholder="test@example.com"
+                      required
+                      disabled={isPending}
+                      className="border-2 border-gray-200 focus:border-blue-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Telefon *</label>
+                    <Input
+                      name="phone"
+                      type="tel"
+                      placeholder="08-123 456 78"
+                      required
+                      disabled={isPending}
+                      className="border-2 border-gray-200 focus:border-blue-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Beskrivning</label>
+                    <Textarea
+                      name="description"
+                      placeholder="This is a test email to verify the functionality..."
+                      rows={3}
+                      disabled={isPending}
+                      className="border-2 border-gray-200 focus:border-blue-500"
+                    />
+                  </div>
+                  
+                  <div className="flex items-start space-x-3">
+                    <input
+                      type="checkbox"
+                      id="gdpr"
+                      name="gdpr"
+                      disabled={isPending}
+                      className="mt-1 w-4 h-4 text-blue-600 border-2 border-gray-300 rounded focus:ring-blue-500"
+                      required
+                    />
+                    <label htmlFor="gdpr" className="text-sm text-gray-600">
+                      Jag godkänner GDPR *
+                    </label>
+                  </div>
+                  
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={isPending}
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  >
+                    {isPending ? "Skickar..." : "Skicka Test Email"}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
 
-            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-              <h4 className="font-semibold text-blue-800 mb-2">🔍 Felsökningschecklista</h4>
-              <ul className="text-sm text-blue-700 space-y-1">
-                <li>• Kontrollera webbläsarkonsolen för felloggar</li>
-                <li>• Verifiera att RESEND_API_KEY är inställt i miljön</li>
-                <li>• Bekräfta att domänen gladafonster.se är verifierad i Resend</li>
-                <li>• Kontrollera skräppostmappen i mmgladafonster@gmail.com</li>
-                <li>• Verifiera Resend-instrumentpanelen för leveransstatus</li>
-              </ul>
-            </div>
-
-            <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-              <h4 className="font-semibold text-yellow-800 mb-2">⚠️ Vanliga Problem</h4>
-              <ul className="text-sm text-yellow-700 space-y-1">
-                <li>• Domän inte verifierad i Resend-instrumentpanelen</li>
-                <li>• API-nyckel inte korrekt inställd i miljövariabler</li>
-                <li>• E-post hamnar i skräppostmappen</li>
-                <li>• Hastighetsbegränsning (för många test-e-postmeddelanden)</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Footer />
     </div>
   )
 }
