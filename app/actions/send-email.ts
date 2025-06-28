@@ -130,17 +130,17 @@ export async function sendContactEmail(prevState: any, formData: FormData) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Ny Offertförfrågan - Glada Fönster</title>
 </head>
-<body style="background: #f5f6fa; margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif;">
+<body style="background: #f5f6fa; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #f5f6fa; padding: 32px 0;">
     <tr>
       <td align="center">
-        <table width="520" cellpadding="0" cellspacing="0" border="0" style="background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(80,69,229,0.07);">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 500px; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(80,69,229,0.07);">
           <tr>
             <td align="center" style="padding: 32px 24px 0 24px;">
-              <img src="https://gladafonster.se/email-drop.png" alt="Glada Fönster Logo" width="48" height="48" style="display:block; margin-bottom: 8px;" />
+              <img src="https://glada-13-14.vercel.app/glada-fonster-kungsbacka-happy.png" alt="Glada Fönster Logo" width="48" height="48" style="display:block; margin-bottom: 8px;" />
               <div style="color: #5045e5; font-weight: bold; font-size: 22px; margin-bottom: 8px;">Glada Fönster Städ AB</div>
               <div style="font-size: 15px; color: #444; font-style: italic; margin-bottom: 18px; max-width: 340px;">
-                Vi putsar inte bara fönster – vi förvandlar dem till speglar så klara att du kommer att svåra på att du kan se <span style="color:#5045e5; font-weight:600;">ABBA</span> sjunga <span style="font-weight:600;">"Dancing Queen"</span> i din trädgård.
+                Vi putsar inte bara fönster – vi förvandlar dem till speglar så klara att du kommer att svära på att du kan se <span style="color:#5045e5; font-weight:600;">ABBA</span> sjunga <span style="font-weight:600;">"Dancing Queen"</span> i din trädgård.
               </div>
             </td>
           </tr>
@@ -149,19 +149,57 @@ export async function sendContactEmail(prevState: any, formData: FormData) {
               <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #f7f7fc; border-radius: 6px;">
                 <tr>
                   <td style="padding: 24px 20px 20px 20px; color: #222; font-size: 16px;">
-                    <div style="font-weight:600; margin-bottom: 12px;">Hej ${firstName}${lastName ? ' ' + lastName : ''},</div>
-                    <div style="margin-bottom: 18px;">
-                      Vi har mottagit din förfrågan och vill tacka dig för att du kontaktat Glada Fönster.<br><br>
-                      Vi kommer att granska dina uppgifter och återkomma till dig med ett svar via e-post inom högst 2 timmar.<br><br>
-                      Om du ringer oss <span style="font-weight:600;">svarar vi i genomsnitt inom 5 sekunder.</span>
+                    <div style="font-weight:600; margin-bottom: 12px;">Ny offertförfrågan mottagen!</div>
+                    <div style="margin-bottom: 24px;">
+                      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;">
+                        <tr>
+                          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                            <strong style="color: #666;">Namn:</strong>
+                            <div style="margin-top: 4px;">${firstName} ${lastName}</div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                            <strong style="color: #666;">E-post:</strong>
+                            <div style="margin-top: 4px;"><a href="mailto:${email}" style="color: #5045e5; text-decoration: none;">${email}</a></div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                            <strong style="color: #666;">Telefon:</strong>
+                            <div style="margin-top: 4px;"><a href="tel:${phone}" style="color: #5045e5; text-decoration: none;">${phone}</a></div>
+                          </td>
+                        </tr>
+                        ${address ? `
+                        <tr>
+                          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                            <strong style="color: #666;">Adress:</strong>
+                            <div style="margin-top: 4px;">${address}</div>
+                          </td>
+                        </tr>
+                        ` : ''}
+                        ${propertyType ? `
+                        <tr>
+                          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                            <strong style="color: #666;">Fastighetstyp:</strong>
+                            <div style="margin-top: 4px;">${propertyType}</div>
+                          </td>
+                        </tr>
+                        ` : ''}
+                        ${description ? `
+                        <tr>
+                          <td style="padding: 8px 0;">
+                            <strong style="color: #666;">Beskrivning:</strong>
+                            <div style="margin-top: 4px; white-space: pre-wrap;">${description}</div>
+                          </td>
+                        </tr>
+                        ` : ''}
+                      </table>
                     </div>
                     <div style="margin-bottom: 12px;">
-                      Vänliga hälsningar,<br>
-                      <span style="font-weight:600;">Glada Fönster</span>
-                    </div>
-                    <div style="color: #5045e5; font-size: 15px; margin-top: 8px;">
-                      <span style="font-size:18px; vertical-align:middle;">📞</span>
-                      <a href="tel:0728512420" style="color: #5045e5; text-decoration: none;">Telefon: 072-851-2420</a>
+                      <div style="margin-bottom: 8px;">För att svara kunden:</div>
+                      <div style="margin-bottom: 4px;">• Svara på detta mail</div>
+                      <div>• Ring <a href="tel:${phone}" style="color: #5045e5; text-decoration: none;">${phone}</a></div>
                     </div>
                   </td>
                 </tr>
@@ -194,20 +232,27 @@ export async function sendContactEmail(prevState: any, formData: FormData) {
         text: `
 Ny offertförfrågan från Glada Fönster webbsida
 
-Kunduppgifter:
+KUNDUPPGIFTER
+------------
 Namn: ${firstName} ${lastName}
 E-post: ${email}
-Telefon: ${phone}
-${address ? `Adress: ${address}` : ""}
-Fastighetstyp: ${propertyType || "Ej angiven"}
-${description ? `Beskrivning: ${description}` : ""}
+Telefon: ${phone}${address ? `
+Adress: ${address}` : ''}${propertyType ? `
+Fastighetstyp: ${propertyType}` : ''}${description ? `
 
-Ring kunden på ${phone} eller svara på detta mail för att komma i kontakt.
+BESKRIVNING
+-----------
+${description}` : ''}
 
----
+För att svara:
+• Svara på detta mail
+• Ring kunden på ${phone}
+
+--
 Glada Fönster AB
 072-8512420 | info@gladafonster.se
-    `,
+https://gladafonster.se/
+        `,
       })
 
       if (error) {
@@ -233,17 +278,17 @@ Glada Fönster AB
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Glada Fönster Städ AB - Bekräftelse</title>
 </head>
-<body style="background: #f5f6fa; margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif;">
+<body style="background: #f5f6fa; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #f5f6fa; padding: 32px 0;">
     <tr>
       <td align="center">
-        <table width="520" cellpadding="0" cellspacing="0" border="0" style="background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(80,69,229,0.07);">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 500px; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(80,69,229,0.07);">
           <tr>
             <td align="center" style="padding: 32px 24px 0 24px;">
-              <img src="https://gladafonster.se/email-drop.png" alt="Glada Fönster Logo" width="48" height="48" style="display:block; margin-bottom: 8px;" />
+              <img src="https://glada-13-14.vercel.app/glada-fonster-kungsbacka-happy.png" alt="Glada Fönster Logo" width="48" height="48" style="display:block; margin-bottom: 8px;" />
               <div style="color: #5045e5; font-weight: bold; font-size: 22px; margin-bottom: 8px;">Glada Fönster Städ AB</div>
               <div style="font-size: 15px; color: #444; font-style: italic; margin-bottom: 18px; max-width: 340px;">
-                Vi putsar inte bara fönster – vi förvandlar dem till speglar så klara att du kommer att svåra på att du kan se <span style="color:#5045e5; font-weight:600;">ABBA</span> sjunga <span style="font-weight:600;">"Dancing Queen"</span> i din trädgård.
+                Vi putsar inte bara fönster – vi förvandlar dem till speglar så klara att du kommer att svära på att du kan se <span style="color:#5045e5; font-weight:600;">ABBA</span> sjunga <span style="font-weight:600;">"Dancing Queen"</span> i din trädgård.
               </div>
             </td>
           </tr>
