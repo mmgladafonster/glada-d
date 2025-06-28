@@ -126,124 +126,282 @@ export async function sendContactEmail(prevState: any, formData: FormData) {
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Ny Offertförfrågan - Glada Fönster</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f8fafc;">
-  <div style="max-width: 600px; margin: 0 auto; background-color: white;">
-    <!-- Header -->
-    <div style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); color: white; padding: 30px 20px; text-align: center;">
-      <h1 style="margin: 0; font-size: 28px; font-weight: bold;">✨ Ny Offertförfrågan</h1>
-      <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Glada Fönster AB</p>
-    </div>
-
-    <!-- Content -->
-    <div style="padding: 30px 20px;">
-      <h2 style="color: #1e40af; margin-bottom: 25px; font-size: 22px;">👤 Kunduppgifter</h2>
-
-      <!-- Customer Info Card -->
-      <div style="background-color: #f8fafc; padding: 25px; border-radius: 12px; margin-bottom: 25px; border-left: 4px solid #3b82f6;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold; width: 140px; color: #374151;">
-              👤 Namn:
-            </td>
-            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #1f2937;">
-              ${firstName} ${lastName}
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #374151;">
-              📧 E-post:
-            </td>
-            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
-              <a href="mailto:${email}" style="color: #3b82f6; text-decoration: none; font-weight: 500;">
-                ${email}
-              </a>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #374151;">
-              📱 Telefon:
-            </td>
-            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
-              <a href="tel:${phone}" style="color: #3b82f6; text-decoration: none; font-weight: 500;">
-                ${phone}
-              </a>
-            </td>
-          </tr>
-          ${
-            address
-              ? `
-          <tr>
-            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #374151;">
-              📍 Adress:
-            </td>
-            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #1f2937;">
-              ${address}
-            </td>
-          </tr>
-          `
-              : ""
-          }
-          <tr>
-            <td style="padding: 12px 0; font-weight: bold; color: #374151;">
-              🏠 Fastighetstyp:
-            </td>
-            <td style="padding: 12px 0; color: #1f2937;">
-              ${propertyType || "Ej angiven"}
-            </td>
-          </tr>
-        </table>
-      </div>
-
-      ${
-        description
-          ? `
-      <!-- Description Card -->
-      <div style="background-color: #f0f9ff; padding: 25px; border-radius: 12px; margin-bottom: 25px; border-left: 4px solid #0ea5e9;">
-        <h3 style="color: #0c4a6e; margin-top: 0; margin-bottom: 15px; font-size: 18px;">💬 Beskrivning av behov:</h3>
-        <p style="line-height: 1.6; color: #374151; margin: 0; font-size: 16px;">${description}</p>
-      </div>
-      `
-          : ""
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      min-height: 100vh;
+      background: #f5f6fa;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow-x: hidden;
+    }
+    .bg-geo {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .geo-shape {
+      width: 600px;
+      height: 600px;
+      background: linear-gradient(135deg, #a18fff 0%, #7c5cff 100%);
+      opacity: 0.3;
+      transform: rotate(12deg);
+      border-radius: 24px;
+    }
+    .main-card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 500px;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(80, 69, 229, 0.10);
+      overflow: hidden;
+      margin: 0 auto;
+    }
+    .card-header {
+      padding: 32px 0 8px 0;
+      text-align: center;
+      background: #fff;
+    }
+    .card-header img {
+      max-width: 48px;
+      margin: 0 auto 8px auto;
+      display: block;
+    }
+    .company-name {
+      color: #5045e5;
+      font-weight: bold;
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+    .company-desc {
+      font-size: 14px;
+      color: #555;
+      font-style: italic;
+      margin-bottom: 16px;
+      text-align: center;
+      max-width: 260px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .company-desc .highlight {
+      color: #5045e5;
+      font-weight: bold;
+      font-style: normal;
+    }
+    .company-desc .song {
+      color: #000;
+      font-weight: bold;
+      font-style: normal;
+    }
+    .card-content {
+      background: #f7f7fb;
+      padding: 24px 32px 32px 32px;
+      text-align: left;
+    }
+    .notification-badge {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 12px;
+      text-align: center;
+      margin-bottom: 24px;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .customer-info {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      border-left: 4px solid #5045e5;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .customer-info h3 {
+      color: #5045e5;
+      margin: 0 0 16px 0;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .info-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .info-row:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+    .info-label {
+      font-weight: bold;
+      color: #555;
+      width: 100px;
+      flex-shrink: 0;
+    }
+    .info-value {
+      color: #222;
+      flex: 1;
+    }
+    .info-value a {
+      color: #5045e5;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .description-card {
+      background: #f0f9ff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      border-left: 4px solid #0ea5e9;
+    }
+    .description-card h4 {
+      color: #0c4a6e;
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .description-text {
+      color: #374151;
+      line-height: 1.6;
+      margin: 0;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+    .action-btn {
+      flex: 1;
+      min-width: 140px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      text-align: center;
+      font-weight: bold;
+      font-size: 14px;
+      transition: transform 0.2s;
+    }
+    .action-btn:hover {
+      transform: translateY(-2px);
+    }
+    .btn-call {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+    }
+    .btn-email {
+      background: linear-gradient(135deg, #5045e5 0%, #7c5cff 100%);
+      color: white;
+    }
+    .card-footer {
+      background: #fff;
+      padding: 16px 32px;
+      border-top: 1px solid #ececec;
+      text-align: center;
+    }
+    .card-footer a {
+      font-size: 16px;
+      font-weight: bold;
+      color: #5045e5;
+      text-decoration: underline;
+      display: inline-block;
+      margin-top: 8px;
+    }
+    @media (max-width: 500px) {
+      .main-card {
+        max-width: 98vw;
+        border-radius: 10px;
       }
-
-      <!-- Action Card -->
-      <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); padding: 25px; border-radius: 12px; text-align: center; margin-bottom: 25px;">
-        <h3 style="margin: 0 0 10px 0; color: #1e40af; font-size: 18px;">🚀 Nästa steg</h3>
-        <p style="margin: 0; color: #1e40af; font-weight: 600; font-size: 16px;">
-          📧 Svara direkt på detta mail eller ring kunden på 
-          <a href="tel:${phone}" style="color: #1e40af; text-decoration: none;">${phone}</a>
-        </p>
-      </div>
-
-      <!-- Quick Actions -->
-      <div style="text-align: center; margin: 25px 0;">
-        <a href="tel:${phone}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 0 10px 10px 0;">
-          📞 Ring ${phone}
-        </a>
-        <a href="mailto:${email}" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 0 10px 10px 0;">
-          📧 Svara via E-post
-        </a>
+      .card-content, .card-footer {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+      .action-buttons {
+        flex-direction: column;
+      }
+      .action-btn {
+        min-width: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-geo">
+    <div class="geo-shape"></div>
+  </div>
+  <div class="main-card">
+    <div class="card-header">
+      <img src="https://glada-13-14.vercel.app/glada-fonster-kungsbacka-happy.png" alt="Företagslogo" />
+      <div class="company-name">Glada Fönster Städ AB</div>
+      <div class="company-desc">
+        Vi putsar inte bara fönster – vi förvandlar dem till speglar så klara att du kommer att svära på att du kan se
+        <span class="highlight">ABBA</span> sjunga <span class="song">"Dancing Queen"</span> i din trädgård.
       </div>
     </div>
+    <div class="card-content">
+      <div class="notification-badge">
+        🎉 Ny offertförfrågan mottagen!
+      </div>
+      
+      <div class="customer-info">
+        <h3>👤 Kunduppgifter</h3>
+        <div class="info-row">
+          <span class="info-label">Namn:</span>
+          <span class="info-value">${firstName} ${lastName}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">E-post:</span>
+          <span class="info-value"><a href="mailto:${email}">${email}</a></span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Telefon:</span>
+          <span class="info-value"><a href="tel:${phone}">${phone}</a></span>
+        </div>
+        ${address ? `
+        <div class="info-row">
+          <span class="info-label">Adress:</span>
+          <span class="info-value">${address}</span>
+        </div>
+        ` : ''}
+        <div class="info-row">
+          <span class="info-label">Fastighet:</span>
+          <span class="info-value">${propertyType || "Ej angiven"}</span>
+        </div>
+      </div>
 
-    <!-- Footer -->
-    <div style="background-color: #1f2937; color: white; padding: 25px 20px; text-align: center;">
-      <h3 style="margin: 0 0 10px 0; font-size: 18px;">Glada Fönster AB</h3>
-      <p style="margin: 0; font-size: 14px; opacity: 0.8;">
-        📞 072-8512420 | 📧 info@gladafonster.se | 🌐 gladafonster.se
-      </p>
-      <p style="margin: 10px 0 0 0; font-size: 12px; opacity: 0.6;">
-        Göteborgs mest pålitliga fönsterputsare sedan 2014
-      </p>
+      ${description ? `
+      <div class="description-card">
+        <h4>💬 Kundens beskrivning</h4>
+        <p class="description-text">${description}</p>
+      </div>
+      ` : ''}
+
+      <div class="action-buttons">
+        <a href="tel:${phone}" class="action-btn btn-call">📞 Ring ${firstName}</a>
+        <a href="mailto:${email}" class="action-btn btn-email">📧 Svara via E-post</a>
+      </div>
+    </div>
+    <div class="card-footer">
+      <a href="https://gladafonster.se/">https://gladafonster.se/</a>
     </div>
   </div>
 </body>
 </html>
-`
+    `
 
     console.log("📤 Försöker skicka e-post till Glada Fönster...")
 
@@ -290,66 +448,175 @@ Glada Fönster AB
       console.log("📤 Försöker skicka automatiskt svar till kunden...")
 
       const customerReplyHtml = `
-  <!DOCTYPE html>
-  <html lang="sv">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tack för din förfrågan - Glada Fönster</title>
-  </head>
-  <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f8fafc;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: white;">
-      <!-- Header -->
-      <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px 20px; text-align: center;">
-        <h1 style="margin: 0; font-size: 28px; font-weight: bold;">🎉 Tack för din förfrågan!</h1>
-        <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Glada Fönster AB</p>
-      </div>
-
-      <!-- Content -->
-      <div style="padding: 30px 20px;">
-        <p style="font-size: 16px; line-height: 1.6; color: #374151; margin-bottom: 20px;">
-          Hej ${firstName},
-        </p>
-        <p style="font-size: 16px; line-height: 1.6; color: #374151; margin-bottom: 20px;">
-          Vi har mottagit din förfrågan och vill tacka dig för att du kontaktade Glada Fönster.
-          Vi kommer att granska dina uppgifter och återkomma till dig med ett svar inom **max 2 timmar**.
-        </p>
-        <p style="font-size: 16px; line-height: 1.6; color: #374151; margin-bottom: 20px;">
-          Under tiden kan du besöka vår hemsida för mer information om våra tjänster:
-          <br />
-          <a href="https://www.gladafonster.se" style="color: #3b82f6; text-decoration: none; font-weight: 500;">
-            www.gladafonster.se
-          </a>
-        </p>
-        <p style="font-size: 16px; line-height: 1.6; color: #374151; margin-bottom: 20px;">
-          Med vänliga hälsningar,
-          <br />
-          Teamet på Glada Fönster
-        </p>
-
-        <!-- Contact Info Card -->
-        <div style="background-color: #f0f9ff; padding: 25px; border-radius: 12px; margin-top: 30px; border-left: 4px solid #0ea5e9;">
-          <h3 style="color: #0c4a6e; margin-top: 0; margin-bottom: 15px; font-size: 18px;">Kontakta oss direkt:</h3>
-          <p style="margin: 0; font-size: 16px; color: #374151;">
-            📞 Telefon: <a href="tel:0728512420" style="color: #3b82f6; text-decoration: none; font-weight: 500;">072-8512420</a>
-          </p>
-          <p style="margin: 10px 0 0 0; font-size: 16px; color: #374151;">
-            📧 E-post: <a href="mailto:info@gladafonster.se" style="color: #3b82f6; text-decoration: none; font-weight: 500;">info@gladafonster.se</a>
-          </p>
-        </div>
-      </div>
-
-      <!-- Footer -->
-      <div style="background-color: #1f2937; color: white; padding: 25px 20px; text-align: center;">
-        <h3 style="margin: 0 0 10px 0; font-size: 18px;">Glada Fönster AB</h3>
-        <p style="margin: 0; font-size: 14px; opacity: 0.8;">
-          Göteborgs mest pålitliga fönsterputsare sedan 2014
-        </p>
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Glada Fönster Städ AB - Bekräftelse</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      min-height: 100vh;
+      background: #f5f6fa;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow-x: hidden;
+    }
+    .bg-geo {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .geo-shape {
+      width: 600px;
+      height: 600px;
+      background: linear-gradient(135deg, #a18fff 0%, #7c5cff 100%);
+      opacity: 0.3;
+      transform: rotate(12deg);
+      border-radius: 24px;
+    }
+    .main-card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 400px;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(80, 69, 229, 0.10);
+      overflow: hidden;
+      margin: 0 auto;
+    }
+    .card-header {
+      padding: 32px 0 8px 0;
+      text-align: center;
+      background: #fff;
+    }
+    .card-header img {
+      max-width: 48px;
+      margin: 0 auto 8px auto;
+      display: block;
+    }
+    .company-name {
+      color: #5045e5;
+      font-weight: bold;
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+    .company-desc {
+      font-size: 14px;
+      color: #555;
+      font-style: italic;
+      margin-bottom: 16px;
+      text-align: center;
+      max-width: 260px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .company-desc .highlight {
+      color: #5045e5;
+      font-weight: bold;
+      font-style: normal;
+    }
+    .company-desc .song {
+      color: #000;
+      font-weight: bold;
+      font-style: normal;
+    }
+    .card-content {
+      background: #f7f7fb;
+      padding: 24px 32px 32px 32px;
+      text-align: left;
+    }
+    .card-content .greeting {
+      font-weight: bold;
+      font-size: 16px;
+      color: #222;
+      margin-bottom: 16px;
+      display: block;
+    }
+    .card-content p {
+      font-size: 16px;
+      color: #222;
+      line-height: 1.6;
+      margin: 0 0 16px 0;
+    }
+    .card-content .bold {
+      font-weight: bold;
+    }
+    .card-content .phone {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 8px;
+      font-size: 16px;
+    }
+    .card-content .phone .phone-number {
+      color: #5045e5;
+      text-decoration: none;
+    }
+    .card-footer {
+      background: #fff;
+      padding: 16px 32px;
+      border-top: 1px solid #ececec;
+      text-align: center;
+    }
+    .card-footer a {
+      font-size: 20px;
+      font-weight: bold;
+      color: #5045e5;
+      text-decoration: underline;
+      display: inline-block;
+      margin-top: 8px;
+    }
+    @media (max-width: 500px) {
+      .main-card {
+        max-width: 98vw;
+        border-radius: 10px;
+      }
+      .card-content, .card-footer {
+        padding-left: 10px;
+        padding-right: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-geo">
+    <div class="geo-shape"></div>
+  </div>
+  <div class="main-card">
+    <div class="card-header">
+      <img src="https://glada-13-14.vercel.app/glada-fonster-kungsbacka-happy.png" alt="Företagslogo" />
+      <div class="company-name">Glada Fönster Städ AB</div>
+      <div class="company-desc">
+        Vi putsar inte bara fönster – vi förvandlar dem till speglar så klara att du kommer att svära på att du kan se
+        <span class="highlight">ABBA</span> sjunga <span class="song">"Dancing Queen"</span> i din trädgård.
       </div>
     </div>
-  </body>
-  </html>
-  `
+    <div class="card-content">
+      <span class="greeting">Hej ${firstName},</span>
+      <p>Vi har mottagit din förfrågan och vill tacka dig för att du kontaktat Glada Fönster.</p>
+      <p>Vi kommer att granska dina uppgifter och återkomma till dig med ett svar via e-post inom högst 2 timmar.</p>
+      <p>Om du ringer oss <span class="bold">svarar vi i genomsnitt inom 5 sekunder.</span></p>
+      <p class="bold">Vänliga hälsningar,<br />Glada Fönster</p>
+      <span class="phone">📞 <a href="tel:072-851-2420" class="phone-number">Telefon: 072-851-2420</a></span>
+    </div>
+    <div class="card-footer">
+      <a href="https://gladafonster.se/">https://gladafonster.se/</a>
+    </div>
+  </div>
+</body>
+</html>
+      `
 
       const { data: replyData, error: replyError } = await resend.emails.send({
         from: EMAIL_CONFIG.from,
