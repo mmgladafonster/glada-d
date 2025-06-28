@@ -40,7 +40,7 @@ export const Header = forwardRef<HTMLElement, {}>((props, ref) => {
           <nav className="hidden lg:flex items-center space-x-8">
             <Link
               href="/"
-              className={`transition-all duration-300 font-medium relative group ${
+              className={`transition-all duration-300 font-bold uppercase relative group ${
                 isActive("/") ? "text-blue-600" : "text-gray-600 hover:text-blue-600"
               }`}
             >
@@ -53,7 +53,7 @@ export const Header = forwardRef<HTMLElement, {}>((props, ref) => {
             </Link>
             <Link
               href="/about"
-              className={`transition-all duration-300 font-medium relative group ${
+              className={`transition-all duration-300 font-bold uppercase relative group ${
                 isActive("/about") ? "text-blue-600" : "text-gray-600 hover:text-blue-600"
               }`}
             >
@@ -66,7 +66,7 @@ export const Header = forwardRef<HTMLElement, {}>((props, ref) => {
             </Link>
             <Link
               href="/contact"
-              className={`transition-all duration-300 font-medium relative group ${
+              className={`transition-all duration-300 font-bold uppercase relative group ${
                 isActive("/contact") ? "text-blue-600" : "text-gray-600 hover:text-blue-600"
               }`}
             >
@@ -111,7 +111,7 @@ export const Header = forwardRef<HTMLElement, {}>((props, ref) => {
               <Link
                 href="/"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`transition-all duration-300 font-medium py-2 px-4 rounded-lg ${
+                className={`transition-all duration-300 font-bold uppercase py-2 px-4 rounded-lg ${
                   isActive("/") ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
                 }`}
               >
@@ -120,7 +120,7 @@ export const Header = forwardRef<HTMLElement, {}>((props, ref) => {
               <Link
                 href="/about"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`transition-all duration-300 font-medium py-2 px-4 rounded-lg ${
+                className={`transition-all duration-300 font-bold uppercase py-2 px-4 rounded-lg ${
                   isActive("/about") ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
                 }`}
               >
@@ -129,7 +129,7 @@ export const Header = forwardRef<HTMLElement, {}>((props, ref) => {
               <Link
                 href="/contact"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`transition-all duration-300 font-medium py-2 px-4 rounded-lg ${
+                className={`transition-all duration-300 font-bold uppercase py-2 px-4 rounded-lg ${
                   isActive("/contact")
                     ? "text-blue-600 bg-blue-50"
                     : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
