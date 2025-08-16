@@ -26,6 +26,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="sv">
+      <head>
+        <link rel="icon" href="/glada-fonster.ico" sizes="any" />
+      </head>
       <body>
         <script
           type="application/ld+json"
