@@ -3,7 +3,7 @@
 import Script from "next/script"
 
 export default function Analytics() {
-  const GA_MEASUREMENT_ID = "G-484550811"
+  const GA_MEASUREMENT_ID = "G-XG98JTZZ02"
   const CLARITY_ID = "qz0bmswope"
 
   return (
