@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   title: "Glada Fönster - Professionell Fönsterputs i Göteborg",
   description: "Professionella fönsterputstjänster för hem och företag i Göteborg. 100% nöjdhetsgaranti.",
   generator: "v0.dev",
+  alternates: {
+    canonical: "https://gladafonster.se",
+  },
 }
 
 export default function RootLayout({
