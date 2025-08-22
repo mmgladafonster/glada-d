@@ -4,6 +4,7 @@ const { parse } = require('csv-parse/sync'); // Using sync for simplicity in a s
 
 const csvFilePath = 'gladafonster_programmatic_keywords.csv';
 const appDirectory = 'app'; // Assuming your app directory is at the root
+let mkdirTouchCommands = '';
 
 function sanitizeString(str) {
     return str
@@ -119,6 +120,9 @@ export default function ServiceLocationPage({ params }: PageProps) {
 
     console.log('\n// Summary of created paths:');
     createdPaths.forEach(p => console.log(p));
+
+    fs.writeFileSync('commands.sh', mkdirTouchCommands.slice(0, -4), 'utf-8');
+    console.log('Commands written to commands.sh');
 }
 
-generateRoutes();
+generateRoutes().catch(err => console.error(err));
