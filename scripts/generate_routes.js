@@ -63,6 +63,8 @@ async function generateRoutes() {
         console.log(`mkdir -p ${folderPath}`);
         console.log(`touch ${pageFilePath}`);
 
+        mkdirTouchCommands += `mkdir -p ${folderPath} && touch ${pageFilePath} && `;
+
         createdPaths.push(pageFilePath);
     }
 
