@@ -70,7 +70,7 @@ export default function DebugPage() {
               <h4 className="font-semibold text-blue-800 mb-2">🔧 Felsökningssteg</h4>
               <ol className="text-blue-700 text-sm space-y-1 list-decimal list-inside">
                 <li>Kontrollera om RESEND_API_KEY är inställt i dina miljövariabler</li>
-                <li>Verifiera att API-nyckeln börjar med "re_"</li>
+                <li>Verifiera att API-nyckeln börjar med &quot;re_&quot;</li>
                 <li>Bekräfta att gladafonster.se-domänen är verifierad i Resend-instrumentpanelen</li>
                 <li>Testa med hjälp av sidan /test-email</li>
                 <li>Kontrollera webbläsarkonsolen och serverloggar för detaljerade fel</li>

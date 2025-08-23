@@ -2,7 +2,7 @@
 
 import { resend, EMAIL_CONFIG } from "@/lib/resend"
 
-export async function sendContactEmail(prevState: any, formData: FormData) {
+export async function sendContactEmail(prevState: unknown, formData: FormData) {
   console.log("🚀 Serveråtgärd anropad - sendContactEmail")
   console.log("📅 Tidsstämpel:", new Date().toISOString())
 
@@ -366,7 +366,7 @@ Webbplats: www.gladafonster.se
         success: true,
         message: "Tack för din förfrågan! Vi återkommer inom 2 timmar.",
       }
-    } catch (emailError: any) {
+    } catch (emailError) {
       console.error("❌ E-postskickning misslyckades (huvudfel):", emailError)
       console.error("E-postfeldetaljer:", {
         message: emailError.message,
@@ -378,7 +378,7 @@ Webbplats: www.gladafonster.se
         message: `Tekniskt fel: ${emailError.message}. Ring oss direkt på 072-8512420.`,
       }
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error("❌ Serveråtgärdsfel (toppnivå):", error)
     console.error("Åtgärdsfeldetaljer:", {
       message: error.message,

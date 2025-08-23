@@ -9,30 +9,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
 export default function AboutPage() {
-  /* ---------- team data (could come from CMS later) ---------- */
-  const teamMembers = [
-    {
-      name: "Miroslaw",
-      role: "Medgrundare • Ledande Putsare",
-      experience: "17 års erfarenhet",
-      image: "/placeholder-user.jpg",
-      description: "Perfektionsdriven expert som får glas att skimra sedan 2007.",
-    },
-    {
-      name: "Marius",
-      role: "Medgrundare • Driftansvarig",
-      experience: "18 års erfarenhet",
-      image: "/placeholder-user.jpg",
-      description: "Ser till att varje jobb flyter smidigt och att kunderna är nöjda.",
-    },
-    {
-      name: "Alex",
-      role: "Tekniker",
-      experience: "5 års erfarenhet",
-      image: "/placeholder-user.jpg",
-      description: "Säkerhetsfokuserad specialist för höghöjds- och fasadarbeten.",
-    },
-  ]
+  
 
   const serviceAreas = [
     "Varberg",

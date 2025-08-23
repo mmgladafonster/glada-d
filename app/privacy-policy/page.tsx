@@ -24,11 +24,11 @@ export default function PrivacyPolicyPage() {
         <div className="bg-white/80 backdrop-blur-sm p-6 md:p-8 rounded-xl shadow-lg border border-gray-200 space-y-8">
           <p className="leading-relaxed text-gray-700">
             Detta dokument innehåller Integritetspolicy, Användarvillkor och Cookiepolicy för Glada Fönster Städ AB
-            ("vi," "oss," eller "vår"), en leverantör av fönsterputstjänster som driver webbplatsen{" "}
+            (&quot;vi,&quot; &quot;oss,&quot; eller &quot;vår&quot;), en leverantör av fönsterputstjänster som driver webbplatsen{" "}
             <a href="https://www.gladafonster.se" className="text-blue-600 hover:underline">
               www.gladafonster.se
             </a>{" "}
-            ("Webbplatsen"). Genom att använda vår Webbplats eller våra tjänster godkänner du dessa policydokument. Läs
+            (&quot;Webbplatsen&quot;). Genom att använda vår Webbplats eller våra tjänster godkänner du dessa policydokument. Läs
             dem noggrant.
           </p>
 
@@ -189,7 +189,7 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">Användarvillkor</h2>
             <h3 className="text-xl font-semibold text-gray-800 mb-3">Inledning</h3>
             <p className="leading-relaxed text-gray-700">
-              Dessa Användarvillkor ("Villkor") reglerar din användning av vår Webbplats och fönsterputstjänster. Genom
+              Dessa Användarvillkor (&quot;Villkor&quot;) reglerar din användning av vår Webbplats och fönsterputstjänster. Genom
               att använda vår Webbplats eller boka tjänster godkänner du dessa Villkor.
             </p>
 
@@ -365,7 +365,7 @@ export default function PrivacyPolicyPage() {
 
             <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">Ditt samtycke</h3>
             <p className="leading-relaxed text-gray-700">
-              Genom att klicka på ”Acceptera” i vår cookiebanner godkänner du icke-nödvändiga cookies. Du kan när som
+              Genom att klicka på &quot;Acceptera&quot; i vår cookiebanner godkänner du icke-nödvändiga cookies. Du kan när som
               helst återkalla samtycket via cookieinställningar eller genom att kontakta oss.
             </p>
 

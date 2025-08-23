@@ -1,10 +1,11 @@
 "use client"
 
 import Script from "next/script"
+import { CONFIG } from "@/lib/config"
 
 export default function Analytics() {
-  const GA_MEASUREMENT_ID = "G-XG98JTZZ02"
-  const CLARITY_ID = "qz0bmswope"
+  const GA_MEASUREMENT_ID = CONFIG.analytics.gaMeasurementId
+  const CLARITY_ID = CONFIG.analytics.clarityId
 
   return (
     <>

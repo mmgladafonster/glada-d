@@ -12,7 +12,7 @@ interface OptimizedYouTubeVideoProps {
   description: string
 }
 
-export function OptimizedYouTubeVideo({ videoId, title, description }: OptimizedYouTubeVideoProps) {
+export function OptimizedYouTubeVideo({ videoId, title }: OptimizedYouTubeVideoProps) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [isInView, setIsInView] = useState(false)
   const [thumbnailError, setThumbnailError] = useState(false)

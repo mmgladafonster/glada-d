@@ -7,7 +7,7 @@ import Image from "next/image"
 import { useState, forwardRef } from "react"
 import { usePathname } from "next/navigation"
 
-export const Header = forwardRef<HTMLElement, {}>((props, ref) => {
+export const Header = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>((props, ref) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
 

@@ -4,15 +4,15 @@ import "./globals.css"
 import Analytics from "@/components/google-analytics"
 
 export const metadata: Metadata = {
-  title: "Glada Fรถnster - Professionell Fรถnsterputs i Gรถteborg",
-  description: "Professionella fรถnsterputstjรคnster fรถr hem och fรถretag i Gรถteborg. 100% nรถjdhetsgaranti.",
+  title: "Glada Fönster - Professionell Fönsterputs i Göteborg",
+  description: "Professionella fönsterputstjänster för hem och företag i Göteborg. 100% nöjdhetsgaranti.",
   generator: "v0.dev",
   alternates: {
     canonical: "https://gladafonster.se",
   },
   openGraph: {
-    title: 'Glada Fรถnster',
-    description: 'Vi levererar och monterar fรถnster i Kungsbacka, Gรถteborg och hela Halland. Kontakta oss fรถr kostnadsfri offert!',
+    title: 'Glada Fönster',
+    description: 'Vi levererar och monterar fönster i Kungsbacka, Göteborg och hela Halland. Kontakta oss för kostnadsfri offert!',
     images: ['https://www.gladafonster.se/glada-fonster-kungsbacka-happy.png'],
     url: 'https://gladafonster.se',
     type: 'website',
