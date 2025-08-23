@@ -22,6 +22,7 @@ export default function Analytics() {
           gtag('config', '${GA_MEASUREMENT_ID}', {
             page_title: document.title,
             page_location: window.location.href,
+            page_path: window.location.pathname,
           });
         `}
       </Script>
@@ -38,4 +39,4 @@ export default function Analytics() {
       </Script>
     </>
   )
-} 
+}
