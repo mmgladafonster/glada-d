@@ -34,13 +34,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: 'https://gladafonster.se/about', lastModified: new Date() },
   ];
 
-  // Read CSV to get all service-location combinations
+  // Read CSV to get all service-location combinations and keywords for LP pages
   const csvContent = fs.readFileSync(csvFilePath, 'utf-8');
   const records = parse(csvContent, {
     columns: true,
     skip_empty_lines: true
   }) as CSVRecord[];
 
+  // Generate service-location pages
   const uniqueServiceLocations = new Set();
   records.forEach(record => {
     if (record.Service && record.Location && record.Location.toLowerCase() !== 'all') {
@@ -49,7 +50,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   });
 
   // Generate dynamic pages for each service-location combination
-  const dynamicPages = Array.from(uniqueServiceLocations as Set<string>).map((serviceLocation: string) => {
+  const serviceLocationPages = Array.from(uniqueServiceLocations as Set<string>).map((serviceLocation: string) => {
     const [service, location] = serviceLocation.split('|');
     const sanitizedService = sanitizeString(service);
     const sanitizedLocation = sanitizeString(location);
@@ -62,7 +63,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     };
   });
 
-  // Combine static and dynamic pages
+  // Generate LP pages from keywords
+  const lpPages = records
+    .filter(record => record.Keyword && record.Keyword.trim() !== '')
+    .map(record => {
+      const slug = sanitizeString(record.Keyword);
+      return {
+        url: `https://gladafonster.se/lp/${slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'monthly' as const,
+        priority: 0.6,
+      };
+    });
+
+  // Combine all pages
   const allPages = [
     ...staticPages.map(page => ({
       url: page.url,
@@ -70,7 +84,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly' as const,
       priority: page.url === 'https://gladafonster.se' ? 1 : 0.8,
     })),
-    ...dynamicPages
+    ...serviceLocationPages,
+    ...lpPages
   ];
 
   return allPages;
