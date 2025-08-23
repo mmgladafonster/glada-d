@@ -19,7 +19,8 @@ export async function generateStaticParams() {
 
 // Generate dynamic metadata for each page
 export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const keywordData = keywords.find((k) => k.slug === params.slug)
+  const awaitedParams = await params;
+  const keywordData = keywords.find((k) => k.slug === awaitedParams.slug)
 
   if (!keywordData) {
     return {
@@ -28,16 +29,22 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     }
   }
 
-  const capitalizedKeyword = keywordData.Keyword.charAt(0).toUpperCase() + keywordData.Keyword.slice(1)
+  // Capitalize first letter of each word
+  const capitalizeWords = (str: string) => {
+    return str.replace(/(^\w{1}|\s+\w{1})/g, (letter) => letter.toUpperCase());
+  };
+
+  const capitalizedKeyword = capitalizeWords(keywordData.Keyword);
 
   return {
     title: `${capitalizedKeyword} - Glada Fönster`,
-    description: `Professionell ${keywordData.Service} i ${keywordData.Location}. Få en gratis offert idag för ${keywordData.Keyword.charAt(0).toUpperCase() + keywordData.Keyword.slice(1)}.`,
+    description: `Professionell ${keywordData.Service} i ${keywordData.Location}. Få en gratis offert idag för ${capitalizedKeyword}.`,
   }
 }
 
-export default function LandingPage({ params }: { params: { slug: string } }) {
-  const keywordData = keywords.find((k) => k.slug === params.slug)
+export default async function LandingPage({ params }: { params: { slug: string } }) {
+  const awaitedParams = await params;
+  const keywordData = keywords.find((k) => k.slug === awaitedParams.slug)
 
   if (!keywordData) {
     notFound()
@@ -85,6 +92,54 @@ export default function LandingPage({ params }: { params: { slug: string } }) {
       answer:
         "Vi är inte bara ett företag – vi är ett team som värdesätter kvalitet, respekt och mänskliga relationer. Våra kunder är som vänner, och vårt arbete speglar vår passion för perfektion.",
     },
+    {
+      question: "Varför är era priser högre än andra företags?",
+      answer:
+        "Vi fokuserar på kvalitet, inte kvantitet. Vi erbjuder oklanderliga tjänster, utan brådska, med erfarna medarbetare som tar dagliga risker. Att välja oss är som att välja en läkare med 20 års erfarenhet – kvalitet kostar, men det är värt det.",
+    },
+    {
+      question: "Hur bestäms era priser?",
+      answer: "Priserna beror på fastighetens storlek, antal fönster, tillgångens komplexitet och fönstertypen.",
+    },
+    {
+      question: "Har ni dolda kostnader eller extra avgifter?",
+      answer: "Nej, vi erbjuder transparenta priser utan dolda kostnader. Alla detaljer diskuteras vid bokning.",
+    },
+    {
+      question: "Erbjuder ni rabatter för långtidskontrakt?",
+      answer:
+        "Ja, vi erbjuder förmånliga paket för kunder som väljer regelbundna tjänster. Kontakta oss för att diskutera en personlig plan.",
+    },
+    {
+      question: "Hur ofta bör jag putsa mina fönster?",
+      answer:
+        "Det beror på din boendemiljö. Generellt rekommenderar vi fönsterputs 3-4 gånger per år för att bibehålla klarhet och ett snyggt utseende. Om du bor nära havet rekommenderar vi putsning 6-7 gånger per år, då salt kan skada fönstren, och ett frekvent abonnemang är mer ekonomiskt.",
+    },
+    {
+      question: "Putsar ni fönster både inifrån och utifrån?",
+      answer:
+        "Ja, vår tjänst inkluderar komplett fönsterputs, både inifrån och utifrån, för perfekt sikt. Detta kan medföra en extra kostnad.",
+    },
+    {
+      question: "Erbjuder ni tjänster för höga byggnader eller svåråtkomliga platser?",
+      answer:
+        "Ja, vårt team är utbildat för att arbeta säkert på höga höjder eller under svåra förhållanden, i enlighet med alla säkerhetsföreskrifter i Sverige.",
+    },
+    {
+      question: "Har ni försäkring?",
+      answer:
+        "Ja, vi är försäkrade, vilket täcker ansvarsförsäkring och arbetsplatsolyckor, för våra kunders trygghet. Lyckligtvis har vi inte haft några incidenter sedan vi startade företaget.",
+    },
+    {
+      question: "Vad händer om jag inte är nöjd?",
+      answer:
+        "Om du inte är nöjd åtar vi oss att åtgärda problemet inom 48 timmar, utan extra kostnad, om du informerar oss i tid. I vissa fall erbjuder vi tjänsten gratis för att säkerställa din tillfredsställelse.",
+    },
+    {
+      question: "Kan ni neka att utföra tjänster?",
+      answer:
+        "Ja, vi förbehåller oss rätten att neka kunder som inte respekterar kvaliteten på vårt arbete eller våra anställdas säkerhet. Vi strävar efter partnerskap baserade på ömsesidig respekt.",
+    },
   ]
 
   return (
@@ -107,7 +162,7 @@ export default function LandingPage({ params }: { params: { slug: string } }) {
 
               <h1 className="text-2xl font-bold leading-tight md:text-3xl lg:text-5xl">
                 <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  {keywordData.Keyword.charAt(0).toUpperCase() + keywordData.Keyword.slice(1)}
+                  {keywordData.Keyword.replace(/(^\w{1}|\s+\w{1})/g, (letter) => letter.toUpperCase())}
                 </span>
               </h1>
 
@@ -123,6 +178,44 @@ export default function LandingPage({ params }: { params: { slug: string } }) {
                 <p className="text-center text-xs text-gray-600 lg:text-left">
                   Vi är stolta över att erbjuda {keywordData.Service} i {keywordData.Location} med omnejd.
                 </p>
+              </div>
+
+              {/* service areas pill list */}
+              <div className="mb-8 rounded-2xl border border-white/20 bg-white/60 p-6 shadow-lg shadow-blue-500/5 backdrop-blur-sm">
+                <h3 className="mb-3 text-center text-sm font-bold text-gray-900 lg:text-left">🌟 Alla Serviceområden</h3>
+                <div className="flex flex-wrap justify-center gap-2 lg:justify-start">
+                  {[
+                    "Varberg",
+                    "Åskloster",
+                    "Väröbacka",
+                    "Bua",
+                    "Frillesås",
+                    "Åsa",
+                    "Kullavik",
+                    "Särö",
+                    "Kungsbacka",
+                    "Billdal",
+                    "Askim",
+                    "Mölndal",
+                    "Göteborg",
+                    "Kungälv",
+                    "Torslanda",
+                  ].map((city) => (
+                    <span
+                      key={city}
+                      className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-300 ${
+                        city === keywordData.Location
+                          ? "border-purple-200 bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+                          : "border-blue-200 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 hover:from-blue-200 hover:to-indigo-200"
+                      }`}
+                    >
+                      {city}
+                    </span>
+                  ))}
+                  <span className="rounded-full border border-purple-200 bg-gradient-to-r from-purple-100 to-pink-100 px-3 py-1 text-xs font-bold text-purple-800">
+                    + Utanför Göteborg
+                  </span>
+                </div>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -150,7 +243,7 @@ export default function LandingPage({ params }: { params: { slug: string } }) {
             <div className="relative order-first hidden lg:order-last lg:block">
               <Image
                 src="/glada-car-background.png"
-                alt={`Glada Fönster servicefordon för ${keywordData.Keyword.charAt(0).toUpperCase() + keywordData.Keyword.slice(1)}`}
+                alt={`Glada Fönster servicefordon för ${keywordData.Keyword.replace(/(^\w{1}|\s+\w{1})/g, (letter) => letter.toUpperCase())}`}
                 width={500}
                 height={600}
                 priority
@@ -268,7 +361,7 @@ export default function LandingPage({ params }: { params: { slug: string } }) {
               Spara 20% på {keywordData.Service} i {keywordData.Location}
             </h2>
             <p className="mx-auto mb-8 max-w-3xl text-xl font-light leading-relaxed text-blue-100">
-              Boka {keywordData.Keyword.charAt(0).toUpperCase() + keywordData.Keyword.slice(1)} nu och få 20% rabatt. Gäller endast nya kunder.
+              Boka {keywordData.Keyword.replace(/(^\w{1}|\s+\w{1})/g, (letter) => letter.toUpperCase())} nu och få 20% rabatt. Gäller endast nya kunder.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center">
               <Link href="/contact#request-quote-form">
@@ -316,7 +409,7 @@ export default function LandingPage({ params }: { params: { slug: string } }) {
         </div>
       </section>
 
-      <Footer />
+      <Footer keywordData={keywordData} />
     </div>
   )
 }

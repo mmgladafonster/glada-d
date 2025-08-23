@@ -1,7 +1,7 @@
 import { Phone, Mail, Sparkles } from "lucide-react"
 import Link from "next/link"
 
-export function Footer() {
+export function Footer({ keywordData }: { keywordData?: any }) {
   return (
     <footer className="bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900 text-white py-12 md:py-16 relative overflow-hidden">
       <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=60 height=60 viewBox=0 0 60 60 xmlns=http://www.w3.org/2000/svg%3E%3Cg fill=none fillRule=evenodd%3E%3Cg fill=%23ffffff fillOpacity=0.05%3E%3Ccircle cx=30 cy=30 r=2/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]"></div>
@@ -21,7 +21,7 @@ export function Footer() {
               </div>
             </div>
             <p className="text-gray-300 mb-4 md:mb-6 leading-relaxed">
-              Kungsbacka mest pålitliga fönsterputsare sedan 2014. Professionell service med 100% nöjdhetsgaranti.
+              {keywordData ? `${keywordData.Location} mest pålitliga fönsterputsare sedan 2014` : "Kungsbacka mest pålitliga fönsterputsare sedan 2014"}. Professionell service med 100% nöjdhetsgaranti.
             </p>
           </div>
           <div>
