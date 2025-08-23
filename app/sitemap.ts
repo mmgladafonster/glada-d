@@ -1,28 +1,77 @@
 import { MetadataRoute } from 'next';
+import fs from 'fs';
+import { parse } from 'csv-parse/sync';
+
+const csvFilePath = 'gladafonster_programmatic_keywords.csv';
+
+function sanitizeString(str: string) {
+  return str
+    .toLowerCase()
+    .replace(/å/g, 'a')
+    .replace(/ä/g, 'a')
+    .replace(/ö/g, 'o')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+interface CSVRecord {
+  Keyword: string;
+  Service: string;
+  Location: string;
+  Modifier: string;
+  Keyword_Type: string;
+  Search_Intent: string;
+  Estimated_Difficulty: string;
+  Content_Type_Suggestion: string;
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // List your static pages
   const staticPages = [
-    { url: 'https://gladafonster.se', lastModified: new Date() }, // Root path
+    { url: 'https://gladafonster.se', lastModified: new Date() },
     { url: 'https://gladafonster.se/privacy-policy', lastModified: new Date() },
-    // Add other static pages here if you create them
+    { url: 'https://gladafonster.se/contact', lastModified: new Date() },
+    { url: 'https://gladafonster.se/about', lastModified: new Date() },
   ];
 
-  // If you had dynamic content, you would fetch it here and map it to URL objects.
-  // For example, if you had a blog with posts:
-  // const posts = await fetchBlogPosts();
-  // const blogPages = posts.map((post) => ({
-  //   url: `https://gladafonster.se/blog/${post.slug}`,
-  //   lastModified: post.updatedAt || post.createdAt,
-  // }));
+  // Read CSV to get all service-location combinations
+  const csvContent = fs.readFileSync(csvFilePath, 'utf-8');
+  const records = parse(csvContent, {
+    columns: true,
+    skip_empty_lines: true
+  }) as CSVRecord[];
+
+  const uniqueServiceLocations = new Set();
+  records.forEach(record => {
+    if (record.Service && record.Location && record.Location.toLowerCase() !== 'all') {
+      uniqueServiceLocations.add(`${record.Service}|${record.Location}`);
+    }
+  });
+
+  // Generate dynamic pages for each service-location combination
+  const dynamicPages = Array.from(uniqueServiceLocations as Set<string>).map((serviceLocation: string) => {
+    const [service, location] = serviceLocation.split('|');
+    const sanitizedService = sanitizeString(service);
+    const sanitizedLocation = sanitizeString(location);
+    
+    return {
+      url: `https://gladafonster.se/services/${sanitizedService}/${sanitizedLocation}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    };
+  });
 
   // Combine static and dynamic pages
-  const pages = staticPages.map((page) => ({
-    url: page.url,
-    lastModified: page.lastModified,
-    changeFrequency: 'weekly', // Or 'daily', 'monthly', etc.
-    priority: page.url === 'https://gladafonster.se' ? 1 : 0.8, // Homepage gets priority 1
-  }));
+  const allPages = [
+    ...staticPages.map(page => ({
+      url: page.url,
+      lastModified: page.lastModified,
+      changeFrequency: 'weekly' as const,
+      priority: page.url === 'https://gladafonster.se' ? 1 : 0.8,
+    })),
+    ...dynamicPages
+  ];
 
-  return pages;
+  return allPages;
 }
