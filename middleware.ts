@@ -25,11 +25,11 @@ export function middleware(request: NextRequest) {
     // Content Security Policy (enhanced from previous config)
     'Content-Security-Policy': [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://www.googletagmanager.com https://www.clarity.ms https://vercel.live",
+      "script-src 'self' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://www.googletagmanager.com https://www.clarity.ms https://scripts.clarity.ms https://vercel.live",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: https: blob:",
-      "connect-src 'self' https://www.google.com https://www.googletagmanager.com https://www.clarity.ms https://vercel.live wss://ws-us3.pusher.com https://region1.google-analytics.com",
+      "connect-src 'self' https://www.google.com https://www.googletagmanager.com https://www.clarity.ms https://scripts.clarity.ms https://vercel.live wss://ws-us3.pusher.com https://region1.google-analytics.com",
       "frame-src 'self' https://www.google.com https://www.youtube.com",
       "object-src 'none'",
       "base-uri 'self'",
