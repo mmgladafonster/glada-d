@@ -2,9 +2,42 @@
 
 import { resend, EMAIL_CONFIG } from "@/lib/resend"
 
+async function verifyRecaptcha(token: string) {
+  const secretKey = process.env.RECAPTCHA_SECRET_KEY
+
+  const verificationResponse = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: `secret=${secretKey}&response=${token}`,
+  })
+
+  if (!verificationResponse.ok) {
+    return { success: false, message: "Failed to verify reCAPTCHA." }
+  }
+
+  const data = await verificationResponse.json()
+  // You can also check data.score here if you want to be more strict
+  // e.g., if (data.score < 0.5) { ... }
+  return { success: data.success, message: data["error-codes"]?.join(", ") || "reCAPTCHA verification failed." }
+}
+
 export async function sendContactEmail(prevState: unknown, formData: FormData) {
   console.log("🚀 Serveråtgärd anropad - sendContactEmail")
   console.log("📅 Tidsstämpel:", new Date().toISOString())
+
+  const recaptchaToken = formData.get("recaptchaToken") as string | null
+
+  if (!recaptchaToken) {
+    return { success: false, message: "reCAPTCHA token missing." }
+  }
+
+  const recaptchaResult = await verifyRecaptcha(recaptchaToken)
+
+  if (!recaptchaResult.success) {
+    return { success: false, message: recaptchaResult.message }
+  }
 
   // Lägg till en liten fördröjning för att förhindra snabba inskick
   await new Promise((resolve) => setTimeout(resolve, 100))

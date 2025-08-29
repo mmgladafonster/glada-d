@@ -51,6 +51,7 @@
     "react": "^19",
     "react-day-picker": "latest",
     "react-dom": "^19",
+    "react-google-recaptcha-v3": "^1.11.0",
     "react-hook-form": "latest",
     "react-resizable-panels": "latest",
     "recharts": "latest",
