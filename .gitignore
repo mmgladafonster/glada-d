@@ -9,6 +9,15 @@ out/
 # Environment variables
 .env*
 !.env.example
+.env.local
+.env.production
+.env.development
+
+# Security files
+*.key
+*.pem
+*.p12
+secrets/
 
 # OS files
 .DS_Store

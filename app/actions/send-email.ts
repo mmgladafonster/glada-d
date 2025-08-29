@@ -1,6 +1,7 @@
 "use server"
 
 import { resend, EMAIL_CONFIG } from "@/lib/resend"
+import { checkRateLimit } from "@/lib/rate-limit"
 
 async function verifyRecaptcha(token: string) {
   const secretKey = process.env.RECAPTCHA_SECRET_KEY
@@ -24,13 +25,21 @@ async function verifyRecaptcha(token: string) {
 }
 
 export async function sendContactEmail(prevState: unknown, formData: FormData) {
-  console.log("🚀 Serveråtgärd anropad - sendContactEmail")
-  console.log("📅 Tidsstämpel:", new Date().toISOString())
+  // Security: Minimal logging for production
 
   const recaptchaToken = formData.get("recaptchaToken") as string | null
 
   if (!recaptchaToken) {
     return { success: false, message: "reCAPTCHA token missing." }
+  }
+
+  // Rate limiting check (using email as identifier)
+  const email = formData.get("email")?.toString()?.trim() || ""
+  if (email && !checkRateLimit(email, 3, 15 * 60 * 1000)) { // 3 requests per 15 minutes per email
+    return {
+      success: false,
+      message: "För många förfrågningar. Vänta 15 minuter innan du försöker igen."
+    }
   }
 
   const recaptchaResult = await verifyRecaptcha(recaptchaToken)
@@ -43,116 +52,85 @@ export async function sendContactEmail(prevState: unknown, formData: FormData) {
   await new Promise((resolve) => setTimeout(resolve, 100))
 
   try {
-    // Förbättrad miljöfelsökning
-    console.log("🔍 Miljöfelsökning:")
-    console.log("- NODE_ENV:", process.env.NODE_ENV)
-    console.log("- RESEND_API_KEY finns:", !!process.env.RESEND_API_KEY)
-    console.log("- RESEND_API_KEY längd:", process.env.RESEND_API_KEY?.length || 0)
-    console.log("- RESEND_API_KEY börjar med 're_':", process.env.RESEND_API_KEY?.startsWith("re_") || false)
-    console.log("- RESEND_API_KEY första 10 tecken:", process.env.RESEND_API_KEY?.substring(0, 10) || "N/A")
+    // Security: Removed detailed environment logging
 
-    // Kontrollera om formData finns
+    // Validate form data exists
     if (!formData) {
-      console.error("❌ Ingen formData mottagen")
       return {
         success: false,
         message: "Formulärdata saknas. Försök igen.",
       }
     }
 
-    const firstName = formData.get("firstName")?.toString()?.trim() || ""
-    const lastName = formData.get("lastName")?.toString()?.trim() || ""
-    const email = formData.get("email")?.toString()?.trim() || ""
-    const phone = formData.get("phone")?.toString()?.trim() || ""
-    const address = formData.get("address")?.toString()?.trim() || ""
-    const propertyType = formData.get("propertyType")?.toString()?.trim() || ""
-    const description = formData.get("description")?.toString()?.trim() || ""
+    // Input validation and sanitization
+    const firstName = formData.get("firstName")?.toString()?.trim().slice(0, 50) || ""
+    const lastName = formData.get("lastName")?.toString()?.trim().slice(0, 50) || ""
+    const email = formData.get("email")?.toString()?.trim().slice(0, 100) || ""
+    const phone = formData.get("phone")?.toString()?.trim().slice(0, 20) || ""
+    const address = formData.get("address")?.toString()?.trim().slice(0, 200) || ""
+    const propertyType = formData.get("propertyType")?.toString()?.trim().slice(0, 50) || ""
+    const description = formData.get("description")?.toString()?.trim().slice(0, 1000) || ""
 
-    console.log("📝 Formulärdata mottagen:", {
-      firstName,
-      lastName,
-      email,
-      phone,
-      address,
-      propertyType,
-      description: description ? "Ja" : "Nej",
-    })
+    // Sanitize inputs to prevent XSS
+    const sanitizeInput = (input: string) => {
+      return input
+        .replace(/[<>]/g, '') // Remove potential HTML tags
+        .replace(/javascript:/gi, '') // Remove javascript: protocol
+        .replace(/on\w+=/gi, '') // Remove event handlers
+    }
 
-    // Validera obligatoriska fält
-    if (!firstName || !lastName || !email || !phone) {
-      console.error("❌ Obligatoriska fält saknas")
+    const sanitizedFirstName = sanitizeInput(firstName)
+    const sanitizedLastName = sanitizeInput(lastName)
+    const sanitizedAddress = sanitizeInput(address)
+    const sanitizedDescription = sanitizeInput(description)
+
+    // Security: Removed detailed form data logging
+
+    // Validate required fields
+    if (!sanitizedFirstName || !sanitizedLastName || !email || !phone) {
       return {
         success: false,
         message: "Alla obligatoriska fält måste fyllas i.",
       }
     }
 
-    // Validera e-postformat
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    // Validate email format (more strict)
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
     if (!emailRegex.test(email)) {
-      console.error("❌ Ogiltigt e-postformat:", email)
       return {
         success: false,
         message: "Vänligen ange en giltig e-postadress.",
       }
     }
 
-    // Detaljerad Resend konfigurationskontroll
-    console.log("🔑 Detaljerad Resend Konfigurationskontroll:")
+    // Validate phone format (Swedish phone numbers)
+    const phoneRegex = /^(\+46|0)[0-9\s\-]{8,15}$/
+    if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+      return {
+        success: false,
+        message: "Vänligen ange ett giltigt telefonnummer.",
+      }
+    }
 
+    // Validate name fields (no numbers or special characters)
+    const nameRegex = /^[a-zA-ZåäöÅÄÖ\s\-']{1,50}$/
+    if (!nameRegex.test(sanitizedFirstName) || !nameRegex.test(sanitizedLastName)) {
+      return {
+        success: false,
+        message: "Namn får endast innehålla bokstäver.",
+      }
+    }
+
+    // Validate API configuration (secure)
     const apiKey = process.env.RESEND_API_KEY
-    console.log("- Rå API-nyckel finns:", !!apiKey)
-    console.log("- API-nyckeltyp:", typeof apiKey)
-    console.log("- API-nyckel längd:", apiKey?.length || 0)
 
-    if (apiKey) {
-      console.log("- API-nyckel förhandsvisning:", `${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 5)}`)
-      console.log("- Börjar med 're_':", apiKey.startsWith("re_"))
-      console.log("- Innehåller endast giltiga tecken:", /^[a-zA-Z0-9_-]+$/.test(apiKey))
-    }
-
-    console.log("- Resend-klient initierad:", !!resend)
-    console.log("- E-postkonfiguration:", EMAIL_CONFIG)
-
-    // Steg-för-steg validering med specifika felmeddelanden
-    if (!apiKey) {
-      console.error("❌ STEG 1 MISSLYCKADES: RESEND_API_KEY miljövariabel är inte inställd")
-      console.error("💡 Lösning: Lägg till RESEND_API_KEY i dina miljövariabler")
+    // Validate configuration
+    if (!apiKey || typeof apiKey !== "string" || !apiKey.startsWith("re_") || !resend) {
       return {
         success: false,
-        message:
-          "E-posttjänsten är inte konfigurerad (API-nyckel saknas). Ring oss på 072-8512420 så hjälper vi dig direkt.",
+        message: "E-posttjänsten är inte tillgänglig. Ring oss på 072-8512420 så hjälper vi dig direkt.",
       }
     }
-
-    if (typeof apiKey !== "string") {
-      console.error("❌ STEG 2 MISSLYCKADES: RESEND_API_KEY är inte en sträng")
-      console.error("💡 Lösning: Se till att RESEND_API_KEY är inställd som ett strängvärde")
-      return {
-        success: false,
-        message: "E-posttjänsten har fel datatyp. Ring oss på 072-8512420 så hjälper vi dig direkt.",
-      }
-    }
-
-    if (!apiKey.startsWith("re_")) {
-      console.error("❌ STEG 3 MISSLYCKADES: RESEND_API_KEY-formatet är ogiltigt - ska börja med 're_'")
-      console.error("💡 Lösning: Skaffa en giltig API-nyckel från Resend-instrumentpanelen")
-      return {
-        success: false,
-        message: "E-posttjänsten har en ogiltig API-nyckel. Ring oss på 072-8512420 så hjälper vi dig direkt.",
-      }
-    }
-
-    if (!resend) {
-      console.error("❌ STEG 4 MISSLYCKADES: Resend-klienten inte initierad trots giltig API-nyckel")
-      console.error("💡 Detta borde inte hända om tidigare steg klarades")
-      return {
-        success: false,
-        message: "E-posttjänsten kunde inte initialiseras. Ring oss på 072-8512420 så hjälper vi dig direkt.",
-      }
-    }
-
-    console.log("✅ Alla konfigurationskontroller godkända!")
 
     // Create HTML email template for the initial email to Glada Fönster
     const gladaFonsterEmailHtml = `
@@ -188,7 +166,7 @@ export async function sendContactEmail(prevState: unknown, formData: FormData) {
                         <tr>
                           <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
                             <strong style="color: #666;">Namn:</strong>
-                            <div style="margin-top: 4px;">${firstName} ${lastName}</div>
+                            <div style="margin-top: 4px;">${sanitizedFirstName} ${sanitizedLastName}</div>
                           </td>
                         </tr>
                         <tr>
@@ -203,11 +181,11 @@ export async function sendContactEmail(prevState: unknown, formData: FormData) {
                             <div style="margin-top: 4px;"><a href="tel:${phone}" style="color: #5045e5; text-decoration: none;">${phone}</a></div>
                           </td>
                         </tr>
-                        ${address ? `
+                        ${sanitizedAddress ? `
                         <tr>
                           <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
                             <strong style="color: #666;">Adress:</strong>
-                            <div style="margin-top: 4px;">${address}</div>
+                            <div style="margin-top: 4px;">${sanitizedAddress}</div>
                           </td>
                         </tr>
                         ` : ''}
@@ -219,11 +197,11 @@ export async function sendContactEmail(prevState: unknown, formData: FormData) {
                           </td>
                         </tr>
                         ` : ''}
-                        ${description ? `
+                        ${sanitizedDescription ? `
                         <tr>
                           <td style="padding: 8px 0;">
                             <strong style="color: #666;">Beskrivning:</strong>
-                            <div style="margin-top: 4px; white-space: pre-wrap;">${description}</div>
+                            <div style="margin-top: 4px; white-space: pre-wrap;">${sanitizedDescription}</div>
                           </td>
                         </tr>
                         ` : ''}
@@ -252,30 +230,28 @@ export async function sendContactEmail(prevState: unknown, formData: FormData) {
 </html>
     `
 
-    console.log("📤 Försöker skicka e-post till Glada Fönster...")
-
     try {
       // Send email to Glada Fönster (both addresses)
       const { data, error } = await resend.emails.send({
         from: EMAIL_CONFIG.from,
         to: EMAIL_CONFIG.to, // This will send to both info@gladafonster.se and mmgladafonster@gmail.com
         replyTo: email, // Reply to customer's email
-        subject: `🏠 Ny offertförfrågan från ${firstName} ${lastName} - Glada Fönster`,
+        subject: `🏠 Ny offertförfrågan från ${sanitizedFirstName} ${sanitizedLastName} - Glada Fönster`,
         html: gladaFonsterEmailHtml,
         text: `
 Ny offertförfrågan från Glada Fönster webbsida
 
 KUNDUPPGIFTER
 ------------
-Namn: ${firstName} ${lastName}
+Namn: ${sanitizedFirstName} ${sanitizedLastName}
 E-post: ${email}
-Telefon: ${phone}${address ? `
-Adress: ${address}` : ''}${propertyType ? `
-Fastighetstyp: ${propertyType}` : ''}${description ? `
+Telefon: ${phone}${sanitizedAddress ? `
+Adress: ${sanitizedAddress}` : ''}${propertyType ? `
+Fastighetstyp: ${propertyType}` : ''}${sanitizedDescription ? `
 
 BESKRIVNING
 -----------
-${description}` : ''}
+${sanitizedDescription}` : ''}
 
 För att svara:
 • Svara på detta mail
@@ -289,19 +265,13 @@ https://gladafonster.se/
       })
 
       if (error) {
-        console.error("❌ Resend API-fel vid skickande till Glada Fönster:", error)
-        console.error("Feldetaljer:", JSON.stringify(error, null, 2))
         return {
           success: false,
           message: `E-postfel: ${error.message || "Okänt fel"}. Ring oss på 072-8512420.`,
         }
       }
 
-      console.log("✅ E-post skickades framgångsrikt till Glada Fönster!")
-      console.log("E-postdata (Glada Fönster):", data)
-
       // --- Send automatic reply to the customer ---
-      console.log("📤 Försöker skicka automatiskt svar till kunden...")
 
       const customerReplyHtml = `
 <!DOCTYPE html>
@@ -330,7 +300,7 @@ https://gladafonster.se/
               <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #f7f7fc; border-radius: 6px;">
                 <tr>
                   <td style="padding: 24px 20px 20px 20px; color: #222; font-size: 16px;">
-                    <div style="font-weight:600; margin-bottom: 12px;">Hej ${firstName}${lastName ? ' ' + lastName : ''},</div>
+                    <div style="font-weight:600; margin-bottom: 12px;">Hej ${sanitizedFirstName}${sanitizedLastName ? ' ' + sanitizedLastName : ''},</div>
                     <div style="margin-bottom: 18px;">
                       Vi har mottagit din förfrågan och vill tacka dig för att du kontaktat Glada Fönster.<br><br>
                       Vi kommer att granska dina uppgifter och återkomma till dig med ett svar via e-post inom högst 2 timmar.<br><br>
@@ -368,7 +338,7 @@ https://gladafonster.se/
         subject: `Tack för din förfrågan till Glada Fönster!`,
         html: customerReplyHtml,
         text: `
-Hej ${firstName},
+Hej ${sanitizedFirstName},
 
 Tack för din förfrågan till Glada Fönster!
 
@@ -385,14 +355,9 @@ Webbplats: www.gladafonster.se
     `,
       })
 
+      // Auto-reply errors are logged but don't fail the main process
       if (replyError) {
-        console.error("❌ Resend API-fel vid skickande av autosvar till kund:", replyError)
-        console.error("Feldetaljer (autosvar):", JSON.stringify(replyError, null, 2))
-        // Do not return error here, as the primary email to Glada Fönster was successful.
-        // Just log the error for the auto-reply.
-      } else {
-        console.log("✅ Automatiskt svar skickades framgångsrikt till kunden!")
-        console.log("E-postdata (Autosvar):", replyData)
+        console.error("Auto-reply failed:", replyError.message)
       }
 
       return {
@@ -400,27 +365,17 @@ Webbplats: www.gladafonster.se
         message: "Tack för din förfrågan! Vi återkommer inom 2 timmar.",
       }
     } catch (emailError) {
-      console.error("❌ E-postskickning misslyckades (huvudfel):", emailError)
-      console.error("E-postfeldetaljer:", {
-        message: emailError.message,
-        stack: emailError.stack,
-        name: emailError.name,
-      })
+      console.error("Email sending failed:", emailError.message)
       return {
         success: false,
         message: `Tekniskt fel: ${emailError.message}. Ring oss direkt på 072-8512420.`,
       }
     }
   } catch (error) {
-    console.error("❌ Serveråtgärdsfel (toppnivå):", error)
-    console.error("Åtgärdsfeldetaljer:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-    })
+    console.error("Server action error:", error.message)
     return {
       success: false,
-      message: `Systemfel: ${error.message}. Ring oss direkt på 072-8512420.`,
+      message: `Systemfel. Ring oss direkt på 072-8512420.`,
     }
   }
 }
