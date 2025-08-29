@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import type { Metadata } from "next"
 import "./globals.css"
 import Analytics from "@/components/google-analytics"
+import "@/lib/security-init" // Initialize security monitoring
 
 export const metadata: Metadata = {
   title: "Glada Fönster - Professionell Fönsterputs i Göteborg",

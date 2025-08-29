@@ -1,51 +1,91 @@
 "use server"
 
 import { resend, EMAIL_CONFIG } from "@/lib/resend"
-import { checkRateLimit } from "@/lib/rate-limit"
+import { checkMultiLayerRateLimit } from "@/lib/rate-limit"
+import { ERROR_MESSAGES, ERROR_CODES, logSecurityError } from "@/lib/error-messages"
+import { headers } from "next/headers"
+import { logger } from "@/lib/logger"
+import { recordRateLimitViolation, recordRecaptchaFailure, recordValidationError, recordEmailFailure } from "@/lib/security-monitor"
 
 async function verifyRecaptcha(token: string) {
   const secretKey = process.env.RECAPTCHA_SECRET_KEY
 
-  const verificationResponse = await fetch("https://www.google.com/recaptcha/api/siteverify", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: `secret=${secretKey}&response=${token}`,
-  })
-
-  if (!verificationResponse.ok) {
-    return { success: false, message: "Failed to verify reCAPTCHA." }
+  if (!secretKey) {
+    logSecurityError(ERROR_CODES.MISSING_ENV_VAR, "RECAPTCHA_SECRET_KEY not configured")
+    return { success: false, message: "reCAPTCHA configuration error" }
   }
 
-  const data = await verificationResponse.json()
-  // You can also check data.score here if you want to be more strict
-  // e.g., if (data.score < 0.5) { ... }
-  return { success: data.success, message: data["error-codes"]?.join(", ") || "reCAPTCHA verification failed." }
+  try {
+    const verificationResponse = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: `secret=${secretKey}&response=${token}`,
+    })
+
+    if (!verificationResponse.ok) {
+      logSecurityError(ERROR_CODES.RECAPTCHA_VERIFICATION_FAILED, `reCAPTCHA API returned ${verificationResponse.status}`)
+      return { success: false, message: "reCAPTCHA verification failed" }
+    }
+
+    const data = await verificationResponse.json()
+    
+    if (!data.success) {
+      const errorCodes = data["error-codes"]?.join(", ") || "unknown"
+      logSecurityError(ERROR_CODES.RECAPTCHA_VERIFICATION_FAILED, `reCAPTCHA failed with codes: ${errorCodes}`)
+    }
+    
+    return { 
+      success: data.success, 
+      message: data.success ? "reCAPTCHA verified" : "reCAPTCHA verification failed" 
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown reCAPTCHA error'
+    logSecurityError(ERROR_CODES.RECAPTCHA_VERIFICATION_FAILED, `reCAPTCHA verification error: ${errorMessage}`)
+    return { success: false, message: "reCAPTCHA verification failed" }
+  }
 }
 
-export async function sendContactEmail(prevState: unknown, formData: FormData) {
+export async function sendContactEmail(_prevState: unknown, formData: FormData) {
   // Security: Minimal logging for production
 
   const recaptchaToken = formData.get("recaptchaToken") as string | null
+  
+  // Get email early for logging purposes
+  const email = formData.get("email")?.toString()?.trim() || ""
 
   if (!recaptchaToken) {
-    return { success: false, message: "reCAPTCHA token missing." }
+    logSecurityError(ERROR_CODES.RECAPTCHA_VERIFICATION_FAILED, "reCAPTCHA token missing", email)
+    return { success: false, message: ERROR_MESSAGES.RECAPTCHA_MISSING }
   }
 
-  // Rate limiting check (using email as identifier)
-  const email = formData.get("email")?.toString()?.trim() || ""
-  if (email && !checkRateLimit(email, 3, 15 * 60 * 1000)) { // 3 requests per 15 minutes per email
+  // Enhanced rate limiting check (email + IP)
+  const headersList = await headers()
+  const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 
+                   headersList.get('x-real-ip') || 
+                   'unknown'
+
+  const rateLimitResult = checkMultiLayerRateLimit(email, ipAddress)
+  if (!rateLimitResult.allowed) {
+    const reason = rateLimitResult.reason === 'ip_rate_limit' ? 
+      `IP rate limit exceeded: ${ipAddress}` : 
+      `Email rate limit exceeded: ${email}`
+    
+    logSecurityError(ERROR_CODES.RATE_LIMIT_EXCEEDED, reason, email, ipAddress)
+    recordRateLimitViolation(ipAddress, email)
     return {
       success: false,
-      message: "För många förfrågningar. Vänta 15 minuter innan du försöker igen."
+      message: ERROR_MESSAGES.RATE_LIMIT_EXCEEDED
     }
   }
 
   const recaptchaResult = await verifyRecaptcha(recaptchaToken)
 
   if (!recaptchaResult.success) {
-    return { success: false, message: recaptchaResult.message }
+    logSecurityError(ERROR_CODES.RECAPTCHA_VERIFICATION_FAILED, `reCAPTCHA verification failed: ${recaptchaResult.message}`, email)
+    recordRecaptchaFailure(ipAddress, email)
+    return { success: false, message: ERROR_MESSAGES.RECAPTCHA_FAILED }
   }
 
   // Lägg till en liten fördröjning för att förhindra snabba inskick
@@ -56,16 +96,17 @@ export async function sendContactEmail(prevState: unknown, formData: FormData) {
 
     // Validate form data exists
     if (!formData) {
+      logSecurityError(ERROR_CODES.VALIDATION_FAILED, "Form data missing", email)
       return {
         success: false,
-        message: "Formulärdata saknas. Försök igen.",
+        message: ERROR_MESSAGES.GENERIC_ERROR,
       }
     }
 
     // Input validation and sanitization
     const firstName = formData.get("firstName")?.toString()?.trim().slice(0, 50) || ""
     const lastName = formData.get("lastName")?.toString()?.trim().slice(0, 50) || ""
-    const email = formData.get("email")?.toString()?.trim().slice(0, 100) || ""
+    // Email already extracted above for logging
     const phone = formData.get("phone")?.toString()?.trim().slice(0, 20) || ""
     const address = formData.get("address")?.toString()?.trim().slice(0, 200) || ""
     const propertyType = formData.get("propertyType")?.toString()?.trim().slice(0, 50) || ""
@@ -88,36 +129,41 @@ export async function sendContactEmail(prevState: unknown, formData: FormData) {
 
     // Validate required fields
     if (!sanitizedFirstName || !sanitizedLastName || !email || !phone) {
+      logSecurityError(ERROR_CODES.VALIDATION_FAILED, "Required fields missing", email)
+      recordValidationError("Required fields missing", email, ipAddress)
       return {
         success: false,
-        message: "Alla obligatoriska fält måste fyllas i.",
+        message: ERROR_MESSAGES.REQUIRED_FIELDS,
       }
     }
 
     // Validate email format (more strict)
     const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
     if (!emailRegex.test(email)) {
+      logSecurityError(ERROR_CODES.VALIDATION_FAILED, `Invalid email format: ${email}`, email)
       return {
         success: false,
-        message: "Vänligen ange en giltig e-postadress.",
+        message: ERROR_MESSAGES.INVALID_EMAIL,
       }
     }
 
     // Validate phone format (Swedish phone numbers)
     const phoneRegex = /^(\+46|0)[0-9\s\-]{8,15}$/
     if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+      logSecurityError(ERROR_CODES.VALIDATION_FAILED, `Invalid phone format: ${phone}`, email)
       return {
         success: false,
-        message: "Vänligen ange ett giltigt telefonnummer.",
+        message: ERROR_MESSAGES.INVALID_PHONE,
       }
     }
 
     // Validate name fields (no numbers or special characters)
     const nameRegex = /^[a-zA-ZåäöÅÄÖ\s\-']{1,50}$/
     if (!nameRegex.test(sanitizedFirstName) || !nameRegex.test(sanitizedLastName)) {
+      logSecurityError(ERROR_CODES.VALIDATION_FAILED, `Invalid name format: ${sanitizedFirstName} ${sanitizedLastName}`, email)
       return {
         success: false,
-        message: "Namn får endast innehålla bokstäver.",
+        message: ERROR_MESSAGES.INVALID_NAME,
       }
     }
 
@@ -126,9 +172,10 @@ export async function sendContactEmail(prevState: unknown, formData: FormData) {
 
     // Validate configuration
     if (!apiKey || typeof apiKey !== "string" || !apiKey.startsWith("re_") || !resend) {
+      logSecurityError(ERROR_CODES.MISSING_ENV_VAR, "Email service configuration invalid", email)
       return {
         success: false,
-        message: "E-posttjänsten är inte tillgänglig. Ring oss på 072-8512420 så hjälper vi dig direkt.",
+        message: ERROR_MESSAGES.EMAIL_SERVICE_ERROR,
       }
     }
 
@@ -232,7 +279,7 @@ export async function sendContactEmail(prevState: unknown, formData: FormData) {
 
     try {
       // Send email to Glada Fönster (both addresses)
-      const { data, error } = await resend.emails.send({
+      const { error } = await resend.emails.send({
         from: EMAIL_CONFIG.from,
         to: EMAIL_CONFIG.to, // This will send to both info@gladafonster.se and mmgladafonster@gmail.com
         replyTo: email, // Reply to customer's email
@@ -265,9 +312,11 @@ https://gladafonster.se/
       })
 
       if (error) {
+        logSecurityError(ERROR_CODES.EMAIL_SEND_FAILED, `Resend API error: ${error.message}`, email)
+        recordEmailFailure(`Resend API error: ${error.message}`, email)
         return {
           success: false,
-          message: `E-postfel: ${error.message || "Okänt fel"}. Ring oss på 072-8512420.`,
+          message: ERROR_MESSAGES.EMAIL_SERVICE_ERROR,
         }
       }
 
@@ -332,7 +381,7 @@ https://gladafonster.se/
 </html>
       `
 
-      const { data: replyData, error: replyError } = await resend.emails.send({
+      const { error: replyError } = await resend.emails.send({
         from: EMAIL_CONFIG.from,
         to: email, // Send to the customer's email
         subject: `Tack för din förfrågan till Glada Fönster!`,
@@ -357,25 +406,27 @@ Webbplats: www.gladafonster.se
 
       // Auto-reply errors are logged but don't fail the main process
       if (replyError) {
-        console.error("Auto-reply failed:", replyError.message)
+        logger.warn(`Auto-reply failed: ${replyError.message}`, "EMAIL_SERVICE", { email, ipAddress })
       }
 
       return {
         success: true,
-        message: "Tack för din förfrågan! Vi återkommer inom 2 timmar.",
+        message: ERROR_MESSAGES.EMAIL_SEND_SUCCESS,
       }
     } catch (emailError) {
-      console.error("Email sending failed:", emailError.message)
+      const errorMessage = emailError instanceof Error ? emailError.message : 'Unknown email error'
+      logSecurityError(ERROR_CODES.EMAIL_SEND_FAILED, `Email sending failed: ${errorMessage}`, email)
       return {
         success: false,
-        message: `Tekniskt fel: ${emailError.message}. Ring oss direkt på 072-8512420.`,
+        message: ERROR_MESSAGES.EMAIL_SERVICE_ERROR,
       }
     }
   } catch (error) {
-    console.error("Server action error:", error.message)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown server error'
+    logSecurityError(ERROR_CODES.VALIDATION_FAILED, `Server action error: ${errorMessage}`, email)
     return {
       success: false,
-      message: `Systemfel. Ring oss direkt på 072-8512420.`,
+      message: ERROR_MESSAGES.GENERIC_ERROR,
     }
   }
 }

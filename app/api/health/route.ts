@@ -1,32 +1,66 @@
 import { NextResponse } from "next/server"
+import { checkHealthRateLimit } from "@/lib/rate-limit"
+import { headers } from "next/headers"
+import { logger } from "@/lib/logger"
+import { recordRateLimitViolation } from "@/lib/security-monitor"
+
+// Simple health check interface - no sensitive information exposed
+interface HealthResponse {
+  status: "ok" | "error"
+  timestamp: string
+  service: string
+}
 
 export async function GET() {
+  // Rate limiting for health endpoint
+  const headersList = await headers()
+  const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 
+                   headersList.get('x-real-ip') || 
+                   'unknown'
+
+  if (!checkHealthRateLimit(ipAddress)) {
+    logger.rateLimit("Health endpoint rate limit exceeded", `ip:${ipAddress}`, ipAddress)
+    recordRateLimitViolation(ipAddress, `health:${ipAddress}`)
+    return NextResponse.json(
+      { status: "error", timestamp: new Date().toISOString(), service: "Glada Fönster API" },
+      { status: 429 }
+    )
+  }
+
   const apiKey = process.env.RESEND_API_KEY
+  
+  // Perform internal health checks
+  let isHealthy = true
+  let errorDetails = ""
 
-  const healthCheck = {
-    timestamp: new Date().toISOString(),
-    status: "error",
-    resend: {
-      configured: false,
-      apiKeyExists: !!apiKey,
-      apiKeyIsValid: false,
-      message: "Configuration check failed.",
-    },
-  }
-
+  // Check email service configuration (log details server-side only)
   if (!apiKey) {
-    healthCheck.resend.message =
-      "❌ RESEND_API_KEY environment variable is NOT SET. Please add it to your Vercel project settings and redeploy."
+    isHealthy = false
+    errorDetails = "RESEND_API_KEY environment variable is not set"
+    logger.health("Missing RESEND_API_KEY environment variable", false, { error: errorDetails })
   } else if (typeof apiKey !== "string") {
-    healthCheck.resend.message = "❌ RESEND_API_KEY is not a string. Check your environment variable configuration."
+    isHealthy = false
+    errorDetails = "RESEND_API_KEY is not a string"
+    logger.health("RESEND_API_KEY is not a string type", false, { error: errorDetails })
   } else if (!apiKey.startsWith("re_")) {
-    healthCheck.resend.message = '❌ RESEND_API_KEY format is invalid. It must start with "re_".'
+    isHealthy = false
+    errorDetails = "RESEND_API_KEY format is invalid"
+    logger.health("RESEND_API_KEY format is invalid - must start with 're_'", false, { error: errorDetails })
   } else {
-    healthCheck.status = "ok"
-    healthCheck.resend.configured = true
-    healthCheck.resend.apiKeyIsValid = true
-    healthCheck.resend.message = "✅ Resend API key is configured correctly on the server."
+    logger.health("Email service configuration is valid", true)
   }
 
-  return NextResponse.json(healthCheck)
+  // Log overall health status
+  if (!isHealthy) {
+    logger.health(`Service unhealthy: ${errorDetails}`, false, { ipAddress })
+  }
+
+  // Return minimal, safe response to client
+  const healthResponse: HealthResponse = {
+    status: isHealthy ? "ok" : "error",
+    timestamp: new Date().toISOString(),
+    service: "Glada Fönster API"
+  }
+
+  return NextResponse.json(healthResponse)
 }
