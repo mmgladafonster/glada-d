@@ -1,18 +1,24 @@
 "use server"
 
 import { resend, EMAIL_CONFIG } from "@/lib/resend"
-import { checkMultiLayerRateLimit } from "@/lib/rate-limit"
-import { ERROR_MESSAGES, ERROR_CODES, logSecurityError } from "@/lib/error-messages"
+import { checkMultiLayerRateLimit, getRateLimitStats } from "@/lib/rate-limit"
+import { ERROR_MESSAGES, ERROR_CODES, logSecurityError, createSecureErrorResponse, formatSafeErrorMessage } from "@/lib/error-messages"
 import { headers } from "next/headers"
 import { logger } from "@/lib/logger"
 import { recordRateLimitViolation, recordRecaptchaFailure, recordValidationError, recordEmailFailure } from "@/lib/security-monitor"
 
-async function verifyRecaptcha(token: string) {
+async function verifyRecaptcha(token: string, ipAddress: string) {
   const secretKey = process.env.RECAPTCHA_SECRET_KEY
 
   if (!secretKey) {
     logSecurityError(ERROR_CODES.MISSING_ENV_VAR, "RECAPTCHA_SECRET_KEY not configured")
     return { success: false, message: "reCAPTCHA configuration error" }
+  }
+
+  // Basic token validation
+  if (!token || token.length < 20) {
+    logSecurityError(ERROR_CODES.RECAPTCHA_TOKEN_INVALID, "Invalid reCAPTCHA token format")
+    return { success: false, message: "Invalid reCAPTCHA token" }
   }
 
   try {
@@ -21,7 +27,7 @@ async function verifyRecaptcha(token: string) {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: `secret=${secretKey}&response=${token}`,
+      body: `secret=${secretKey}&response=${token}&remoteip=${ipAddress}`,
     })
 
     if (!verificationResponse.ok) {
@@ -34,11 +40,55 @@ async function verifyRecaptcha(token: string) {
     if (!data.success) {
       const errorCodes = data["error-codes"]?.join(", ") || "unknown"
       logSecurityError(ERROR_CODES.RECAPTCHA_VERIFICATION_FAILED, `reCAPTCHA failed with codes: ${errorCodes}`)
+      return { success: false, message: "reCAPTCHA verification failed" }
     }
+
+    // Enhanced validation checks
+    const now = new Date()
+    const challengeTimestamp = new Date(data.challenge_ts)
+    const timeDifference = now.getTime() - challengeTimestamp.getTime()
+    const maxAge = 5 * 60 * 1000 // 5 minutes in milliseconds
+
+    // Check if token is too old
+    if (timeDifference > maxAge) {
+      logSecurityError(ERROR_CODES.RECAPTCHA_TOKEN_EXPIRED, `reCAPTCHA token expired: ${timeDifference}ms old`)
+      return { success: false, message: "reCAPTCHA token expired" }
+    }
+
+    // Check if token is from the future (clock skew protection)
+    if (timeDifference < -60000) { // Allow 1 minute clock skew
+      logSecurityError(ERROR_CODES.RECAPTCHA_TOKEN_INVALID, `reCAPTCHA token from future: ${timeDifference}ms`)
+      return { success: false, message: "reCAPTCHA token invalid" }
+    }
+
+    // Check reCAPTCHA v3 score if available
+    if (data.score !== undefined) {
+      const minScore = 0.5 // Minimum acceptable score
+      if (data.score < minScore) {
+        logSecurityError(ERROR_CODES.RECAPTCHA_SCORE_LOW, `reCAPTCHA score too low: ${data.score}`)
+        return { success: false, message: "reCAPTCHA verification failed" }
+      }
+    }
+
+    // Verify the action matches (if using reCAPTCHA v3)
+    if (data.action && data.action !== 'contact_form') {
+      logSecurityError(ERROR_CODES.RECAPTCHA_ACTION_MISMATCH, `reCAPTCHA action mismatch: ${data.action}`)
+      return { success: false, message: "reCAPTCHA verification failed" }
+    }
+
+    // Log successful verification with details
+    logger.info("reCAPTCHA verification successful", "RECAPTCHA", {
+      score: data.score,
+      action: data.action,
+      hostname: data.hostname,
+      tokenAge: timeDifference
+    })
     
     return { 
-      success: data.success, 
-      message: data.success ? "reCAPTCHA verified" : "reCAPTCHA verification failed" 
+      success: true, 
+      message: "reCAPTCHA verified",
+      score: data.score,
+      action: data.action
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown reCAPTCHA error'
@@ -56,36 +106,103 @@ export async function sendContactEmail(_prevState: unknown, formData: FormData) 
   const email = formData.get("email")?.toString()?.trim() || ""
 
   if (!recaptchaToken) {
-    logSecurityError(ERROR_CODES.RECAPTCHA_VERIFICATION_FAILED, "reCAPTCHA token missing", email)
-    return { success: false, message: ERROR_MESSAGES.RECAPTCHA_MISSING }
+    return createSecureErrorResponse(
+      ERROR_MESSAGES.RECAPTCHA_MISSING,
+      ERROR_CODES.RECAPTCHA_VERIFICATION_FAILED,
+      "reCAPTCHA token missing from form submission",
+      email,
+      ipAddress
+    )
   }
 
-  // Enhanced rate limiting check (email + IP)
+  // Enhanced rate limiting check (email + IP) with spoofing protection
   const headersList = await headers()
-  const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 
-                   headersList.get('x-real-ip') || 
-                   'unknown'
+  
+  // Get IP address with spoofing protection
+  function getClientIP(): string {
+    // On Vercel, x-forwarded-for is the most reliable
+    const forwardedFor = headersList.get('x-forwarded-for')
+    const realIP = headersList.get('x-real-ip')
+    const vercelForwardedFor = headersList.get('x-vercel-forwarded-for')
+    
+    // Vercel-specific header (most trusted)
+    if (vercelForwardedFor) {
+      return vercelForwardedFor.split(',')[0].trim()
+    }
+    
+    // Standard forwarded-for header
+    if (forwardedFor) {
+      const ips = forwardedFor.split(',').map(ip => ip.trim())
+      // Take the first IP (original client) but validate it's not private
+      const clientIP = ips[0]
+      
+      // Basic validation - reject obviously invalid IPs
+      if (clientIP && 
+          clientIP !== 'unknown' && 
+          !clientIP.startsWith('127.') && 
+          !clientIP.startsWith('10.') && 
+          !clientIP.startsWith('192.168.') &&
+          !clientIP.startsWith('172.') &&
+          clientIP.includes('.')) {
+        return clientIP
+      }
+    }
+    
+    // Fallback to x-real-ip
+    if (realIP && realIP !== 'unknown') {
+      return realIP
+    }
+    
+    // Last resort - use a consistent unknown identifier
+    return 'unknown-client'
+  }
+  
+  const ipAddress = getClientIP()
+  
+  // Log IP detection for security monitoring (development only)
+  if (process.env.NODE_ENV === 'development') {
+    logger.info("IP detection details", "SECURITY", {
+      detectedIP: ipAddress,
+      xForwardedFor: headersList.get('x-forwarded-for'),
+      xRealIP: headersList.get('x-real-ip'),
+      vercelForwardedFor: headersList.get('x-vercel-forwarded-for')
+    })
+  }
 
   const rateLimitResult = checkMultiLayerRateLimit(email, ipAddress)
+  
+  // Log rate limiting stats in development
+  if (process.env.NODE_ENV === 'development') {
+    const stats = getRateLimitStats()
+    logger.info("Rate limiting stats", "RATE_LIMIT", stats)
+  }
+  
   if (!rateLimitResult.allowed) {
     const reason = rateLimitResult.reason === 'ip_rate_limit' ? 
       `IP rate limit exceeded: ${ipAddress}` : 
       `Email rate limit exceeded: ${email}`
     
-    logSecurityError(ERROR_CODES.RATE_LIMIT_EXCEEDED, reason, email, ipAddress)
     recordRateLimitViolation(ipAddress, email)
-    return {
-      success: false,
-      message: ERROR_MESSAGES.RATE_LIMIT_EXCEEDED
-    }
+    return createSecureErrorResponse(
+      ERROR_MESSAGES.RATE_LIMIT_EXCEEDED,
+      ERROR_CODES.RATE_LIMIT_EXCEEDED,
+      reason,
+      email,
+      ipAddress
+    )
   }
 
-  const recaptchaResult = await verifyRecaptcha(recaptchaToken)
+  const recaptchaResult = await verifyRecaptcha(recaptchaToken, ipAddress)
 
   if (!recaptchaResult.success) {
-    logSecurityError(ERROR_CODES.RECAPTCHA_VERIFICATION_FAILED, `reCAPTCHA verification failed: ${recaptchaResult.message}`, email)
     recordRecaptchaFailure(ipAddress, email)
-    return { success: false, message: ERROR_MESSAGES.RECAPTCHA_FAILED }
+    return createSecureErrorResponse(
+      ERROR_MESSAGES.RECAPTCHA_FAILED,
+      ERROR_CODES.RECAPTCHA_VERIFICATION_FAILED,
+      `reCAPTCHA verification failed: ${recaptchaResult.message}`,
+      email,
+      ipAddress
+    )
   }
 
   // Lägg till en liten fördröjning för att förhindra snabba inskick

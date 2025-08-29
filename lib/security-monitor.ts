@@ -1,5 +1,6 @@
 // Security monitoring and metrics collection
 import { logger } from "./logger"
+import { createCriticalAlert, createHighAlert, createMediumAlert } from "./security-alerts"
 
 interface SecurityMetrics {
   rateLimitViolations: number
@@ -191,6 +192,24 @@ export const recordRateLimitViolation = (ipAddress: string, identifier: string) 
     details: `Rate limit exceeded for ${identifier}`,
     severity: 'medium'
   })
+  
+  // Check for repeated violations and create alert
+  const recentEvents = securityMonitor.getRecentEvents(50)
+  const recentViolations = recentEvents.filter(
+    event => event.type === 'rate_limit' && 
+    new Date(event.timestamp).getTime() > Date.now() - (15 * 60 * 1000) // Last 15 minutes
+  )
+  
+  if (recentViolations.length >= 5) {
+    createHighAlert(
+      'rate_limit',
+      'Multiple Rate Limit Violations',
+      `${recentViolations.length} rate limit violations detected in the last 15 minutes`,
+      { identifier, recentViolations: recentViolations.length },
+      ipAddress,
+      identifier
+    )
+  }
 }
 
 export const recordRecaptchaFailure = (ipAddress?: string, userEmail?: string) => {
@@ -201,6 +220,24 @@ export const recordRecaptchaFailure = (ipAddress?: string, userEmail?: string) =
     details: 'reCAPTCHA verification failed',
     severity: 'high'
   })
+  
+  // Check for repeated reCAPTCHA failures
+  const recentEvents = securityMonitor.getRecentEvents(50)
+  const recentFailures = recentEvents.filter(
+    event => event.type === 'recaptcha_failure' && 
+    new Date(event.timestamp).getTime() > Date.now() - (10 * 60 * 1000) // Last 10 minutes
+  )
+  
+  if (recentFailures.length >= 3) {
+    createCriticalAlert(
+      'recaptcha',
+      'Multiple reCAPTCHA Failures',
+      `${recentFailures.length} reCAPTCHA verification failures detected in the last 10 minutes`,
+      { recentFailures: recentFailures.length },
+      ipAddress,
+      userEmail
+    )
+  }
 }
 
 export const recordValidationError = (error: string, userEmail?: string, ipAddress?: string) => {
@@ -220,4 +257,22 @@ export const recordEmailFailure = (error: string, userEmail?: string) => {
     details: error,
     severity: 'medium'
   })
+  
+  // Check for email service issues
+  const recentEvents = securityMonitor.getRecentEvents(50)
+  const recentEmailFailures = recentEvents.filter(
+    event => event.type === 'email_failure' && 
+    new Date(event.timestamp).getTime() > Date.now() - (30 * 60 * 1000) // Last 30 minutes
+  )
+  
+  if (recentEmailFailures.length >= 3) {
+    createHighAlert(
+      'system',
+      'Email Service Issues',
+      `${recentEmailFailures.length} email send failures detected in the last 30 minutes`,
+      { error, recentFailures: recentEmailFailures.length },
+      undefined,
+      userEmail
+    )
+  }
 }

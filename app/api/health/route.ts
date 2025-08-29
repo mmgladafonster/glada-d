@@ -3,6 +3,7 @@ import { checkHealthRateLimit } from "@/lib/rate-limit"
 import { headers } from "next/headers"
 import { logger } from "@/lib/logger"
 import { recordRateLimitViolation } from "@/lib/security-monitor"
+import { sanitizeEnvironmentForResponse, checkResponseForExposure } from "@/lib/env-exposure-scanner"
 
 // Simple health check interface - no sensitive information exposed
 interface HealthResponse {
@@ -62,5 +63,16 @@ export async function GET() {
     service: "Glada Fönster API"
   }
 
-  return NextResponse.json(healthResponse)
+  // Environment exposure protection (development check)
+  if (process.env.NODE_ENV === 'development') {
+    const exposureCheck = checkResponseForExposure(healthResponse)
+    if (exposureCheck.hasExposure) {
+      logger.warn("Environment exposure detected in health response", "ENV_EXPOSURE", {
+        exposedPatterns: exposureCheck.exposedPatterns,
+        ipAddress
+      })
+    }
+  }
+
+  return NextResponse.json(sanitizeEnvironmentForResponse(healthResponse))
 }

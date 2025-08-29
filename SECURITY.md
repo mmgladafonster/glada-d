@@ -14,14 +14,25 @@ This document outlines the security measures implemented in the Glada Fönster w
 
 ### 2. Rate Limiting
 - Contact form submissions limited to 3 per 15 minutes per email
+- IP-based rate limiting: 10 requests per 15 minutes per IP
+- Health endpoint: 60 requests per minute per IP
 - In-memory rate limiting with automatic cleanup
+- **Vercel Deployment**: Rate limits reset between serverless function invocations (expected behavior)
+- Multi-layer protection (email + IP) provides redundant security
+- Progressive delay with exponential backoff for repeat offenders
 
-### 3. Security Headers
+### 3. Security Headers (Enhanced - Phase 3)
+- **Middleware-based**: All security headers applied via Next.js middleware
 - X-Frame-Options: DENY (prevents clickjacking)
 - X-Content-Type-Options: nosniff (prevents MIME sniffing)
-- X-XSS-Protection: enabled
-- Content Security Policy configured
-- Referrer Policy set to strict-origin-when-cross-origin
+- X-XSS-Protection: enabled for legacy browsers
+- Content Security Policy: Strict policy with specific domain allowlists
+- Referrer Policy: strict-origin-when-cross-origin
+- Permissions Policy: Restricts dangerous browser features
+- HSTS: Enforced in production (max-age=31536000)
+- Cross-Origin Policies: COEP, COOP, CORP configured
+- Rate limiting headers for API routes
+- Security version tracking
 
 ### 4. Environment Security
 - Sensitive credentials removed from version control
@@ -33,12 +44,15 @@ This document outlines the security measures implemented in the Glada Fönster w
 - Server-side token verification
 - Protection against automated submissions
 
-### 6. Secure Error Handling (NEW - Phase 1)
-- Generic error messages prevent information disclosure
-- Detailed errors logged server-side only
-- Error codes for internal tracking
-- No sensitive information exposed to users
-- Structured security event logging
+### 6. Secure Error Handling (Enhanced - Phase 3)
+- **Generic error messages**: No internal information exposed to users
+- **Detailed server-side logging**: Full error details logged internally only
+- **Error code system**: Internal tracking codes never exposed to users
+- **User-friendly error IDs**: Generated for user reference without revealing system details
+- **Message validation**: Automatic detection of sensitive information in error messages
+- **Log injection prevention**: Sanitized logging to prevent log manipulation
+- **Environment-aware messaging**: Different detail levels for development vs production
+- **Structured security event logging**: Comprehensive error tracking and analysis
 
 ### 7. Health Endpoint Security (NEW - Phase 1)
 - Minimal response data (no sensitive configuration details)
@@ -73,23 +87,50 @@ This document outlines the security measures implemented in the Glada Fönster w
 - Predictable security posture
 - Easier vulnerability tracking
 
-### 12. Environment Variable Management (NEW - Phase 3)
-- Automated validation of all environment variables
-- Production vs development key validation
-- Secure configuration checking
-- Environment-specific security warnings
+### 12. Environment Variable Management (Enhanced - Phase 3)
+- **Automated validation**: All environment variables validated on startup
+- **Production vs development**: Key validation with environment-specific checks
+- **Secure configuration**: Comprehensive configuration security checking
+- **Environment-specific warnings**: Tailored security warnings per environment
+- **Exposure detection**: Runtime scanning for environment variable exposure risks
+- **Client-side protection**: Prevention of sensitive variables in NEXT_PUBLIC_ vars
+- **Response sanitization**: Automatic removal of sensitive data from API responses
+- **Logging protection**: Prevention of sensitive data in application logs
 
-### 13. Security Monitoring Dashboard (NEW - Phase 3)
-- Real-time security metrics and monitoring
-- Security event tracking and analysis
-- Automated threat detection
-- Comprehensive security scoring system
+### 13. Security Monitoring Dashboard (Enhanced - Phase 3)
+- **Real-time security metrics**: Comprehensive monitoring and analysis
+- **Security event tracking**: Detailed event logging and analysis
+- **Automated threat detection**: Intelligent pattern recognition
+- **Comprehensive security scoring**: Dynamic scoring based on multiple factors
+- **Security alerts system**: Real-time notifications for critical events
+- **Email notifications**: Automated alerts sent to security team
+- **Webhook integration**: Support for external monitoring systems
+- **Alert thresholds**: Configurable alerting based on event frequency and severity
 
 ### 14. Automated Security Scanning (NEW - Phase 3)
 - Comprehensive security vulnerability scanning
 - Runtime security checks
 - Dependency security validation
 - Automated security recommendations
+
+## Vercel Deployment Security Considerations
+
+### Serverless Function Behavior
+- **Rate Limiting**: In-memory rate limits reset between function invocations (normal serverless behavior)
+- **Environment Variables**: Securely managed through Vercel dashboard
+- **Edge Protection**: Vercel provides additional DDoS protection at the edge level
+- **Function Isolation**: Each invocation runs in isolated environment
+
+### Acceptable Limitations
+- Rate limiting persistence: Acceptable for this application's use case
+- Memory cleanup: Automatic between function restarts
+- Session state: Stateless design prevents session-based attacks
+
+### Vercel-Specific Security Features
+- Automatic HTTPS/TLS termination
+- Edge network DDoS protection
+- Environment variable encryption
+- Secure deployment pipeline
 
 ## Security Best Practices
 
@@ -156,6 +197,41 @@ RECAPTCHA_SECRET_KEY=your_secret_key_here
 - Dashboard for security status monitoring
 - Comprehensive security scoring
 
+### Security Headers Middleware (Phase 3 Implementation)
+- Centralized security header management via middleware.ts
+- Consistent application across all routes
+- Enhanced CSP with specific domain allowlists
+- Production-specific HSTS enforcement
+- Cross-origin policy configuration
+- Automated security header validation in development
+
+### Enhanced Error Handling (Phase 3 Implementation)
+- Secure error response builder with user-friendly error IDs
+- Automatic validation of error messages for sensitive information
+- Log injection prevention with message sanitization
+- Environment-aware error detail levels
+- Comprehensive error code system for internal tracking
+- Safe error message formatting with fallback mechanisms
+
+### Environment Variable Exposure Protection (Phase 3 Implementation)
+- Comprehensive exposure risk scanning for all environment variables
+- Client-side exposure prevention (NEXT_PUBLIC_ variable validation)
+- Runtime response sanitization to remove sensitive patterns
+- Automatic detection of placeholder values in production
+- Development vs production key validation
+- Logging exposure prevention with pattern detection
+- API response monitoring for environment variable leakage
+
+### Security Monitoring Alerts (Phase 3 Implementation)
+- Real-time security alert system with email and webhook notifications
+- Configurable alert thresholds based on event frequency and severity
+- Intelligent alert aggregation to prevent notification spam
+- Comprehensive alert categories (rate limiting, reCAPTCHA, validation, environment, system)
+- HTML and text email templates for security alerts
+- Alert cooldown periods to prevent duplicate notifications
+- Integration with existing security monitoring and scanning systems
+- Development-mode alert testing and configuration endpoints
+
 ### Automated Security Scanning (Phase 3 Implementation)
 - Regular vulnerability scans
 - Runtime security checks
@@ -184,6 +260,10 @@ If you discover a security vulnerability, please report it to:
 - [x] Environment variable management (Phase 3)
 - [x] Security monitoring dashboard (Phase 3)
 - [x] Automated security scanning (Phase 3)
+- [x] Security headers middleware (Phase 3)
+- [x] Enhanced error message security (Phase 3)
+- [x] Environment variable exposure protection (Phase 3)
+- [x] Security monitoring alerts (Phase 3)
 
 ## Regular Security Tasks
 1. Rotate API keys quarterly
