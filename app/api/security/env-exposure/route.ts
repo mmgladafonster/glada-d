@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   try {
     switch (action) {
       case 'scan':
-        const scanResult = scanEnvironmentExposure()
+        const scanResult = await scanEnvironmentExposure()
         return NextResponse.json({
           success: true,
           scan: scanResult,

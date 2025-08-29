@@ -20,7 +20,7 @@ interface ExposureScanResult {
 class EnvironmentExposureScanner {
   
   // Scan for environment variable exposure risks
-  scanForExposureRisks(): ExposureScanResult {
+  async scanForExposureRisks(): Promise<ExposureScanResult> {
     const risks: ExposureRisk[] = []
     
     // Check for client-side exposure risks
@@ -226,8 +226,8 @@ class EnvironmentExposureScanner {
 export const envExposureScanner = new EnvironmentExposureScanner()
 
 // Convenience function for quick scans
-export function scanEnvironmentExposure(): ExposureScanResult {
-  return envExposureScanner.scanForExposureRisks()
+export async function scanEnvironmentExposure(): Promise<ExposureScanResult> {
+  return await envExposureScanner.scanForExposureRisks()
 }
 
 // Runtime protection function to sanitize environment data

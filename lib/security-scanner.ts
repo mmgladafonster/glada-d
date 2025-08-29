@@ -36,7 +36,7 @@ class SecurityScanner {
     checks.push(...this.checkEnvironmentSecurity())
     
     // Environment exposure checks
-    checks.push(...this.checkEnvironmentExposure())
+    checks.push(...await this.checkEnvironmentExposure())
     
     // Configuration security checks
     checks.push(...this.checkConfigurationSecurity())
@@ -104,11 +104,11 @@ class SecurityScanner {
     return result
   }
 
-  private checkEnvironmentExposure(): SecurityCheck[] {
+  private async checkEnvironmentExposure(): Promise<SecurityCheck[]> {
     const checks: SecurityCheck[] = []
     
     try {
-      const exposureScan = scanEnvironmentExposure()
+      const exposureScan = await scanEnvironmentExposure()
       
       checks.push({
         name: "Environment Variable Exposure",
