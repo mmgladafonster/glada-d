@@ -73,7 +73,7 @@ function ContactFormComponent() {
         console.error("Recaptcha not available")
         return
       }
-      const token = await executeRecaptcha("contactFormSubmit")
+      const token = await executeRecaptcha("contact_form")
       formData.set("recaptchaToken", token) // Add token to form data
       formAction(formData)
     },
