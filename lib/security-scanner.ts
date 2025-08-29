@@ -290,17 +290,28 @@ class SecurityScanner {
   private async checkDependencySecurity(): Promise<SecurityCheck[]> {
     const checks: SecurityCheck[] = []
 
-    // Node.js version check
+    // Node.js version check with safe parsing
     const nodeVersion = process.version
-    const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0])
-    const isSecureNodeVersion = majorVersion >= 18
+    let majorVersion: number | null = null
+    let isSecureNodeVersion = false
+    let versionDetails = `Running Node.js ${nodeVersion}`
+    
+    // Safely parse Node.js version
+    const versionMatch = nodeVersion.match(/^v(\d+)(?:\.\d+\.\d+)?/)
+    if (versionMatch) {
+      majorVersion = parseInt(versionMatch[1], 10)
+      isSecureNodeVersion = majorVersion >= 18
+      versionDetails += isSecureNodeVersion ? ' (secure)' : ' (consider upgrading)'
+    } else {
+      versionDetails += ' (version format unrecognized - please verify manually)'
+    }
 
     checks.push({
       name: "Node.js Version",
       description: "Ensures Node.js version is secure and supported",
       severity: 'medium',
-      status: isSecureNodeVersion ? 'pass' : 'warning',
-      details: `Running Node.js ${nodeVersion}${isSecureNodeVersion ? ' (secure)' : ' (consider upgrading)'}`
+      status: majorVersion !== null ? (isSecureNodeVersion ? 'pass' : 'warning') : 'warning',
+      details: versionDetails
     })
 
     // Dependency vulnerability scan

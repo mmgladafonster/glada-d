@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server"
 import { runSecurityScan } from "@/lib/security-scanner"
 import { checkHealthRateLimit } from "@/lib/rate-limit"
-import { headers } from "next/headers"
 import { logger } from "@/lib/logger"
+import { getClientIp } from "@/utils/getClientIp"
 
 // Security scan endpoint - for automated security monitoring
 export async function GET() {
   // Rate limiting
-  const headersList = await headers()
-  const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 
-                   headersList.get('x-real-ip') || 
-                   'unknown'
+  const ipAddress = await getClientIp()
 
   if (!checkHealthRateLimit(ipAddress)) {
     logger.rateLimit("Security scan rate limit exceeded", `ip:${ipAddress}`, ipAddress)
@@ -54,10 +51,7 @@ export async function GET() {
 // POST endpoint for triggering manual scans with options
 export async function POST(request: Request) {
   // Rate limiting
-  const headersList = await headers()
-  const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 
-                   headersList.get('x-real-ip') || 
-                   'unknown'
+  const ipAddress = await getClientIp()
 
   if (!checkHealthRateLimit(ipAddress)) {
     logger.rateLimit("Security scan rate limit exceeded", `ip:${ipAddress}`, ipAddress)

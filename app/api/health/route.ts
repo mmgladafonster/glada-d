@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server"
 import { checkHealthRateLimit } from "@/lib/rate-limit"
-import { headers } from "next/headers"
 import { logger } from "@/lib/logger"
 import { recordRateLimitViolation } from "@/lib/security-monitor"
 import { sanitizeEnvironmentForResponse, checkResponseForExposure } from "@/lib/env-exposure-scanner"
+import { getClientIp } from "@/utils/getClientIp"
 
 // Simple health check interface - no sensitive information exposed
 interface HealthResponse {
@@ -14,10 +14,7 @@ interface HealthResponse {
 
 export async function GET() {
   // Rate limiting for health endpoint
-  const headersList = await headers()
-  const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 
-                   headersList.get('x-real-ip') || 
-                   'unknown'
+  const ipAddress = await getClientIp()
 
   if (!checkHealthRateLimit(ipAddress)) {
     logger.rateLimit("Health endpoint rate limit exceeded", `ip:${ipAddress}`, ipAddress)

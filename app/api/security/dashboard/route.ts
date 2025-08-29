@@ -2,18 +2,15 @@ import { NextResponse } from "next/server"
 import { securityMonitor } from "@/lib/security-monitor"
 import { validateEnvironment, getEnvironmentInfo } from "@/lib/env-validator"
 import { checkHealthRateLimit } from "@/lib/rate-limit"
-import { headers } from "next/headers"
 import { logger } from "@/lib/logger"
 import { securityAlerts } from "@/lib/security-alerts"
 import { runDependencyScan } from "@/lib/dependency-scanner"
+import { getClientIp } from "@/utils/getClientIp"
 
 // Security dashboard endpoint - restricted access
 export async function GET() {
   // Rate limiting
-  const headersList = await headers()
-  const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 
-                   headersList.get('x-real-ip') || 
-                   'unknown'
+  const ipAddress = await getClientIp()
 
   if (!checkHealthRateLimit(ipAddress)) {
     logger.rateLimit("Security dashboard rate limit exceeded", `ip:${ipAddress}`, ipAddress)

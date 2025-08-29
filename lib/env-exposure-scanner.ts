@@ -230,21 +230,54 @@ export async function scanEnvironmentExposure(): Promise<ExposureScanResult> {
   return await envExposureScanner.scanForExposureRisks()
 }
 
+// Configuration for exposure scanning
+const EXPOSURE_CONFIG = {
+  maxStringSize: 100 * 1024, // 100KB limit for string scanning
+  secretPatterns: [
+    // Resend API keys
+    /re_[A-Za-z0-9]{20,}/g,
+    // reCAPTCHA keys (site and secret)
+    /6L[A-Za-z0-9_-]{38}/g,
+    // Stripe keys
+    /sk_[A-Za-z0-9]{20,}/g,
+    // Google API keys
+    /AIza[A-Za-z0-9_-]{35}/g,
+    // JWT tokens (3 base64url segments separated by dots)
+    /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,
+    // AWS Access Key IDs
+    /(?:AKIA|ASIA)[A-Z0-9]{16}/g,
+    // AWS Secret Access Keys (40 base64-like chars)
+    /[A-Za-z0-9+/]{40}/g,
+    // Generic OAuth bearer tokens (long base64/base64url strings)
+    /[A-Za-z0-9_-]{32,}/g,
+    // Hex/UUID style keys
+    /[a-fA-F0-9]{32,}/g
+  ]
+}
+
 // Runtime protection function to sanitize environment data
 export function sanitizeEnvironmentForResponse(data: any): any {
   if (typeof data === 'string') {
-    // Check if string contains potential secrets
-    const secretPatterns = [
-      /re_[A-Za-z0-9]{20,}/g,
-      /6L[A-Za-z0-9_-]{38}/g,
-      /sk_[A-Za-z0-9]{20,}/g,
-      /AIza[A-Za-z0-9_-]{35}/g
-    ]
+    // Enforce size limit to prevent ReDoS attacks
+    if (data.length > EXPOSURE_CONFIG.maxStringSize) {
+      logger.warn("String too large for exposure scanning, truncating", "ENV_EXPOSURE_SCANNER", {
+        originalSize: data.length,
+        truncatedSize: EXPOSURE_CONFIG.maxStringSize
+      })
+      data = data.substring(0, EXPOSURE_CONFIG.maxStringSize) + '[TRUNCATED]'
+    }
     
     let sanitized = data
-    secretPatterns.forEach(pattern => {
-      sanitized = sanitized.replace(pattern, '[REDACTED]')
-    })
+    
+    // Use cheap substring checks before expensive regex operations
+    const cheapChecks = ['sk_', 're_', 'AIza', 'eyJ', '6L']
+    const needsRegexCheck = cheapChecks.some(prefix => data.includes(prefix))
+    
+    if (needsRegexCheck) {
+      EXPOSURE_CONFIG.secretPatterns.forEach(pattern => {
+        sanitized = sanitized.replace(pattern, '[REDACTED]')
+      })
+    }
     
     return sanitized
   }
@@ -276,17 +309,39 @@ export function checkResponseForExposure(response: any): {
   exposedPatterns: string[]
 } {
   const responseString = JSON.stringify(response)
+  
+  // Enforce size limit to prevent ReDoS attacks
+  if (responseString.length > EXPOSURE_CONFIG.maxStringSize) {
+    logger.warn("Response too large for exposure scanning, truncating", "ENV_EXPOSURE_SCANNER", {
+      originalSize: responseString.length,
+      truncatedSize: EXPOSURE_CONFIG.maxStringSize
+    })
+    return {
+      hasExposure: false,
+      exposedPatterns: ['Response too large - partial scan only']
+    }
+  }
+  
   const exposedPatterns: string[] = []
   
   const patterns = [
-    { name: 'Resend API Key', pattern: /re_[A-Za-z0-9]{20,}/g },
-    { name: 'reCAPTCHA Key', pattern: /6L[A-Za-z0-9_-]{38}/g },
-    { name: 'Stripe Key', pattern: /sk_[A-Za-z0-9]{20,}/g },
-    { name: 'Google API Key', pattern: /AIza[A-Za-z0-9_-]{35}/g },
-    { name: 'JWT Token', pattern: /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g }
+    { name: 'Resend API Key', pattern: /re_[A-Za-z0-9]{20,}/g, prefix: 're_' },
+    { name: 'reCAPTCHA Key', pattern: /6L[A-Za-z0-9_-]{38}/g, prefix: '6L' },
+    { name: 'Stripe Key', pattern: /sk_[A-Za-z0-9]{20,}/g, prefix: 'sk_' },
+    { name: 'Google API Key', pattern: /AIza[A-Za-z0-9_-]{35}/g, prefix: 'AIza' },
+    { name: 'JWT Token', pattern: /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, prefix: 'eyJ' },
+    { name: 'AWS Access Key', pattern: /(?:AKIA|ASIA)[A-Z0-9]{16}/g, prefix: 'AKIA' },
+    { name: 'AWS Secret Key', pattern: /[A-Za-z0-9+/]{40}/g, prefix: null }, // No cheap check for this one
+    { name: 'OAuth Token', pattern: /[A-Za-z0-9_-]{32,}/g, prefix: null }, // No cheap check for this one
+    { name: 'Hex Key', pattern: /[a-fA-F0-9]{32,}/g, prefix: null } // No cheap check for this one
   ]
   
-  patterns.forEach(({ name, pattern }) => {
+  patterns.forEach(({ name, pattern, prefix }) => {
+    // Use cheap substring check first if available
+    if (prefix && !responseString.includes(prefix)) {
+      return
+    }
+    
     if (pattern.test(responseString)) {
       exposedPatterns.push(name)
     }

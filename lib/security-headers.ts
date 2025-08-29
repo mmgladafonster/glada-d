@@ -94,16 +94,51 @@ export function validateSecurityHeaders(headers: Headers): {
       return
     }
 
-    if (check.expectedValue && headerValue !== check.expectedValue) {
-      failed.push({
-        ...check,
-        description: `${check.description} (Expected: ${check.expectedValue}, Got: ${headerValue})`
-      })
-      return
+    if (check.expectedValue) {
+      let isValid = false
+      
+      if (check.expectedValue instanceof RegExp) {
+        isValid = check.expectedValue.test(headerValue)
+      } else if (typeof check.expectedValue === 'function') {
+        isValid = check.expectedValue(headerValue)
+      } else if (Array.isArray(check.expectedValue)) {
+        isValid = check.expectedValue.includes(headerValue)
+      } else if (typeof check.expectedValue === 'string') {
+        // For complex headers like HSTS and CSP, implement specific validators
+        if (check.header === 'strict-transport-security') {
+          isValid = validateHSTS(headerValue)
+        } else if (check.header === 'content-security-policy') {
+          isValid = validateCSP(headerValue)
+        } else {
+          isValid = headerValue === check.expectedValue
+        }
+      }
+      
+      if (!isValid) {
+        failed.push({
+          ...check,
+          description: `${check.description} (Expected: ${check.expectedValue}, Got: ${headerValue})`
+        })
+        return
+      }
     }
 
     passed.push(check)
   })
+
+  // Helper function to validate HSTS header
+  function validateHSTS(headerValue: string): boolean {
+    // HSTS must contain max-age directive
+    const hasMaxAge = /max-age=\d+/.test(headerValue)
+    return hasMaxAge
+  }
+
+  // Helper function to validate CSP header
+  function validateCSP(headerValue: string): boolean {
+    // CSP should not contain 'unsafe-inline' or 'unsafe-eval' for security
+    const hasUnsafeDirectives = /unsafe-inline|unsafe-eval/.test(headerValue)
+    return !hasUnsafeDirectives
+  }
 
   return { passed, failed, warnings }
 }
@@ -150,6 +185,8 @@ export function testSecurityHeaders(url: string = 'http://localhost:3000'): Prom
       }
     })
     .catch(error => {
-      throw new Error(`Failed to test security headers: ${error.message}`)
+      const errorMessage = `Failed to test security headers: ${error.name}: ${error.message}`
+      const enhancedError = new Error(errorMessage, { cause: error })
+      throw enhancedError
     })
 }

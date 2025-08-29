@@ -215,8 +215,7 @@ export function sanitizeObjectForClient<T extends Record<string, any>>(obj: T): 
 export function containsSensitiveData(text: string): boolean {
   const sensitivePatterns = [
     /re_[A-Za-z0-9]{20,}/g, // Resend API key pattern
-    /6L[A-Za-z0-9_-]{38}/g, // reCAPTCHA site key pattern
-    /6L[A-Za-z0-9_-]{38}/g, // reCAPTCHA secret key pattern
+    /6L[A-Za-z0-9_-]{38}/g, // reCAPTCHA keys (both site and secret use same format)
     /sk_[A-Za-z0-9]{20,}/g, // Stripe secret key pattern
     /pk_[A-Za-z0-9]{20,}/g, // Stripe public key pattern
     /AIza[A-Za-z0-9_-]{35}/g, // Google API key pattern

@@ -26,6 +26,7 @@ export interface AlertConfig {
     low: number      // Send alert after N events in 1 hour
   }
   emailRecipients: string[]
+  fromEmail?: string
   webhookUrl?: string
   cooldownPeriod: number // Minutes between similar alerts
 }
@@ -45,6 +46,7 @@ class SecurityAlertManager {
       low: 10       // After 10 events in 1 hour
     },
     emailRecipients: ['security@gladafonster.se', 'info@gladafonster.se'],
+    fromEmail: 'security@gladafonster.se',
     cooldownPeriod: 30 // 30 minutes between similar alerts
   }
 
@@ -143,13 +145,26 @@ class SecurityAlertManager {
 
   private async sendEmailAlert(alert: SecurityAlert, eventCount: number): Promise<void> {
     try {
+      // Validate and get from email address
+      const fromEmail = this.config.fromEmail || 'security@gladafonster.se'
+      
+      // Basic validation of from email
+      if (!fromEmail || !fromEmail.includes('@') || !fromEmail.includes('.')) {
+        throw new Error(`Invalid from email address: ${fromEmail}`)
+      }
+      
+      // Validate recipients list
+      if (!this.config.emailRecipients || this.config.emailRecipients.length === 0) {
+        throw new Error('No email recipients configured for security alerts')
+      }
+      
       const subject = `🚨 Security Alert: ${alert.title} (${alert.severity.toUpperCase()})`
       
       const emailHtml = this.generateEmailTemplate(alert, eventCount)
       const emailText = this.generateEmailText(alert, eventCount)
 
       await resend.emails.send({
-        from: 'security@gladafonster.se',
+        from: fromEmail,
         to: this.config.emailRecipients,
         subject,
         html: emailHtml,

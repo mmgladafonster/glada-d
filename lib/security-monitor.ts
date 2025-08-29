@@ -36,9 +36,19 @@ class SecurityMonitor {
   private readonly maxEvents = 100 // Keep last 100 events
 
   // Record security events
-  recordEvent(event: Omit<SecurityEvent, 'timestamp'>): void {
+  recordEvent(
+    type: SecurityEvent['type'],
+    details: string,
+    severity: SecurityEvent['severity'],
+    ipAddress?: string,
+    userIdentifier?: string
+  ): void {
     const securityEvent: SecurityEvent = {
-      ...event,
+      type,
+      details,
+      severity,
+      ipAddress,
+      userIdentifier,
       timestamp: new Date().toISOString()
     }
 
@@ -54,11 +64,11 @@ class SecurityMonitor {
     
     // Log the event
     logger.security(
-      `Security event: ${event.type} - ${event.details}`,
-      event.type.toUpperCase(),
-      event.userIdentifier,
-      event.ipAddress,
-      { severity: event.severity }
+      `Security event: ${securityEvent.type} - ${securityEvent.details}`,
+      securityEvent.type.toUpperCase(),
+      securityEvent.userIdentifier,
+      securityEvent.ipAddress,
+      { severity: securityEvent.severity }
     )
   }
 
@@ -185,13 +195,7 @@ export const securityMonitor = new SecurityMonitor()
 
 // Convenience functions for common security events
 export const recordRateLimitViolation = (ipAddress: string, identifier: string) => {
-  securityMonitor.recordEvent({
-    type: 'rate_limit',
-    ipAddress,
-    userIdentifier: identifier,
-    details: `Rate limit exceeded for ${identifier}`,
-    severity: 'medium'
-  })
+  securityMonitor.recordEvent('rate_limit', `Rate limit exceeded for ${identifier}`, 'medium', ipAddress, identifier)
   
   // Check for repeated violations and create alert
   const recentEvents = securityMonitor.getRecentEvents(50)
@@ -213,13 +217,7 @@ export const recordRateLimitViolation = (ipAddress: string, identifier: string) 
 }
 
 export const recordRecaptchaFailure = (ipAddress?: string, userEmail?: string) => {
-  securityMonitor.recordEvent({
-    type: 'recaptcha_failure',
-    ipAddress,
-    userIdentifier: userEmail,
-    details: 'reCAPTCHA verification failed',
-    severity: 'high'
-  })
+  securityMonitor.recordEvent('recaptcha_failure', 'reCAPTCHA verification failed', 'high', ipAddress, userEmail)
   
   // Check for repeated reCAPTCHA failures
   const recentEvents = securityMonitor.getRecentEvents(50)
@@ -241,22 +239,11 @@ export const recordRecaptchaFailure = (ipAddress?: string, userEmail?: string) =
 }
 
 export const recordValidationError = (error: string, userEmail?: string, ipAddress?: string) => {
-  securityMonitor.recordEvent({
-    type: 'validation_error',
-    ipAddress,
-    userIdentifier: userEmail,
-    details: error,
-    severity: 'low'
-  })
+  securityMonitor.recordEvent('validation_error', error, 'low', ipAddress, userEmail)
 }
 
 export const recordEmailFailure = (error: string, userEmail?: string) => {
-  securityMonitor.recordEvent({
-    type: 'email_failure',
-    userIdentifier: userEmail,
-    details: error,
-    severity: 'medium'
-  })
+  securityMonitor.recordEvent('email_failure', error, 'medium', undefined, userEmail)
   
   // Check for email service issues
   const recentEvents = securityMonitor.getRecentEvents(50)

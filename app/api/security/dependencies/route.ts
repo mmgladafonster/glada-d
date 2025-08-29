@@ -7,7 +7,21 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const action = searchParams.get('action')
   const forceRefresh = searchParams.get('force') === 'true'
-  const timeout = searchParams.get('timeout') ? parseInt(searchParams.get('timeout')!) : undefined
+  
+  // Safely parse and validate timeout parameter
+  let timeout: number | undefined
+  const timeoutParam = searchParams.get('timeout')
+  if (timeoutParam) {
+    const parsedTimeout = parseInt(timeoutParam, 10)
+    if (!isNaN(parsedTimeout) && parsedTimeout >= 1000 && parsedTimeout <= 600000) {
+      timeout = parsedTimeout
+    } else if (!isNaN(parsedTimeout)) {
+      // Clamp to valid range (1s to 10min)
+      timeout = Math.max(1000, Math.min(600000, parsedTimeout))
+    }
+    // If parsing fails or value is invalid, timeout remains undefined
+  }
+  
   const enableCache = searchParams.get('cache') !== 'false'
   const parallel = searchParams.get('parallel') !== 'false'
 
@@ -21,7 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Use custom scanner if configuration provided, otherwise use default
-    const scanFunction = Object.keys(customConfig).length > 0 
+    const scanFunction = Object.keys(customConfig).some(key => customConfig[key as keyof typeof customConfig] !== undefined)
       ? () => runDependencyScanWithConfig(customConfig, forceRefresh)
       : () => runDependencyScan(forceRefresh)
 
@@ -126,12 +140,12 @@ export async function GET(request: NextRequest) {
         })
 
       case 'config':
-        // Return current scanner configuration
-        const scanner = new DependencySecurityScanner()
+        // Return current scanner configuration with the parsed config
+        const configScanner = new DependencySecurityScanner(customConfig)
         return NextResponse.json({
           success: true,
           data: {
-            config: scanner.getConfig(),
+            config: configScanner.getConfig(),
             availableOptions: {
               timeout: 'Set custom timeout in milliseconds (?timeout=30000)',
               cache: 'Enable/disable caching (?cache=true/false)',
@@ -144,8 +158,8 @@ export async function GET(request: NextRequest) {
         })
 
       case 'clear-cache':
-        // Clear scanner cache
-        const cacheScanner = new DependencySecurityScanner()
+        // Clear scanner cache with the same configuration
+        const cacheScanner = new DependencySecurityScanner(customConfig)
         await cacheScanner.clearScanCache()
         return NextResponse.json({
           success: true,
@@ -208,8 +222,8 @@ export async function POST(request: NextRequest) {
         break
 
       case 'clear-cache':
-        const scanner = new DependencySecurityScanner()
-        await scanner.clearScanCache()
+        const clearScanner = new DependencySecurityScanner(config)
+        await clearScanner.clearScanCache()
         return NextResponse.json({
           success: true,
           message: "Scanner cache cleared successfully",
@@ -224,13 +238,13 @@ export async function POST(request: NextRequest) {
           }, { status: 400 })
         }
         
-        const configScanner = new DependencySecurityScanner()
-        configScanner.updateConfig(config)
+        const updateScanner = new DependencySecurityScanner(config)
+        updateScanner.updateConfig(config)
         
         return NextResponse.json({
           success: true,
           message: "Scanner configuration updated",
-          updatedConfig: configScanner.getConfig(),
+          updatedConfig: updateScanner.getConfig(),
           timestamp: new Date().toISOString()
         })
 

@@ -120,10 +120,11 @@ function validateEnhancements() {
     
     if (passed) {
       passedChecks++
-      totalChecks++
     }
     console.log()
   })
+  
+  totalChecks += structuralChecks.length
 
   // Summary
   console.log('📊 Validation Summary:')

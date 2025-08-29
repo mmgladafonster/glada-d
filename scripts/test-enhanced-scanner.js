@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Test script for enhanced dependency scanner
-const { DependencySecurityScanner } = require('../lib/dependency-scanner.ts')
+const { DependencySecurityScanner } = require('../lib/dependency-scanner.js')
 
 async function testEnhancedScanner() {
   console.log('🔍 Testing Enhanced Dependency Scanner...\n')
@@ -72,10 +72,10 @@ async function testEnhancedScanner() {
     console.log(`   Overall risk: ${result1.overallRisk}`)
     console.log(`   Dependencies scanned: ${result1.dependencies.length}`)
     
-    if (result1.summary.critical > 0) {
+    if (result1.summary && result1.summary.critical > 0) {
       console.log(`   ⚠️  Critical vulnerabilities: ${result1.summary.critical}`)
     }
-    if (result1.summary.high > 0) {
+    if (result1.summary && result1.summary.high > 0) {
       console.log(`   ⚠️  High vulnerabilities: ${result1.summary.high}`)
     }
 

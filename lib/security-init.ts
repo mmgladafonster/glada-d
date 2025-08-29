@@ -18,11 +18,7 @@ export function initializeSecurity() {
   })
   
   // Record startup event
-  securityMonitor.recordEvent({
-    type: 'suspicious_activity',
-    details: 'Application started - security systems initialized',
-    severity: 'low'
-  })
+  securityMonitor.recordEvent('suspicious_activity', 'Application started - security systems initialized', 'low')
 }
 
 // Graceful shutdown handler
@@ -36,11 +32,17 @@ export function shutdownSecurity() {
   })
 }
 
+// Track if handlers have been registered to prevent duplicates
+let handlersRegistered = false
+
 // Initialize on module load (server-side only)
 if (typeof window === 'undefined') {
   initializeSecurity()
   
-  // Register shutdown handlers
-  process.on('SIGTERM', shutdownSecurity)
-  process.on('SIGINT', shutdownSecurity)
+  // Register shutdown handlers only once
+  if (!handlersRegistered) {
+    process.on('SIGTERM', shutdownSecurity)
+    process.on('SIGINT', shutdownSecurity)
+    handlersRegistered = true
+  }
 }

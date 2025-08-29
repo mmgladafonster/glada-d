@@ -4,7 +4,9 @@ import { createCriticalAlert, createHighAlert, createMediumAlert } from "./secur
 import { exec } from "child_process"
 import { promisify } from "util"
 import * as fs from "fs/promises"
+import * as fsSync from "fs"
 import * as path from "path"
+import * as crypto from "crypto"
 
 const execAsync = promisify(exec)
 
@@ -131,7 +133,7 @@ class DependencySecurityScanner {
 
   // Run comprehensive dependency security scan with enhanced error handling and performance
   async runScan(forceRefresh: boolean = false): Promise<ScanResult> {
-    const scanId = `scan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const scanId = `scan-${Date.now()}-${crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : crypto.randomBytes(4).toString('hex')}`
     const startTime = Date.now()
     
     logger.info("Starting enhanced dependency security scan", "DEPENDENCY_SCANNER", { scanId })
@@ -479,8 +481,10 @@ class DependencySecurityScanner {
     const dependencies: DependencyInfo[] = []
     
     try {
-      // Read package.json
-      const packageJson = require(process.cwd() + '/package.json')
+      // Read package.json safely
+      const packageJsonPath = path.join(process.cwd(), 'package.json')
+      const packageJsonContent = fsSync.readFileSync(packageJsonPath, 'utf8')
+      const packageJson = JSON.parse(packageJsonContent)
       
       // Process production dependencies
       if (packageJson.dependencies) {
@@ -507,9 +511,16 @@ class DependencySecurityScanner {
       }
       
     } catch (error) {
-      logger.warn("Failed to read package.json", "DEPENDENCY_SCANNER", {
-        error: error instanceof Error ? error.message : 'Unknown error'
-      })
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      if (error instanceof Error && error.message.includes('ENOENT')) {
+        throw new Error('package.json file not found in current directory')
+      } else if (error instanceof SyntaxError) {
+        throw new Error(`Invalid JSON in package.json: ${errorMessage}`)
+      } else {
+        logger.warn("Failed to read package.json", "DEPENDENCY_SCANNER", {
+          error: errorMessage
+        })
+      }
     }
     
     return dependencies
@@ -544,18 +555,21 @@ class DependencySecurityScanner {
     } catch (error) {
       // npm outdated returns non-zero exit code when packages are outdated
       // Try to parse the output anyway
-      if (error instanceof Error && 'stdout' in error) {
+      if (error instanceof Error && 'stdout' in error && (error as any).stdout) {
         try {
-          const result = JSON.parse((error as any).stdout || '{}')
-          
-          // Cache the result even if command "failed"
-          if (this.config.enableCaching) {
-            await this.cacheResult('npm-outdated', result)
+          const stdoutContent = (error as any).stdout
+          if (typeof stdoutContent === 'string' && stdoutContent.trim()) {
+            const result = JSON.parse(stdoutContent)
+            
+            // Cache the result even if command "failed"
+            if (this.config.enableCaching) {
+              await this.cacheResult('npm-outdated', result)
+            }
+            
+            return result
           }
-          
-          return result
         } catch (parseError) {
-          throw new Error(`Failed to parse npm outdated output: ${parseError}`)
+          throw new Error(`Failed to parse npm outdated output: ${parseError}. Original stdout: ${(error as any).stdout}`)
         }
       }
       throw error
@@ -586,7 +600,9 @@ class DependencySecurityScanner {
     ]
     
     try {
-      const packageJson = require(process.cwd() + '/package.json')
+      const packageJsonPath = path.join(process.cwd(), 'package.json')
+      const packageJsonContent = fsSync.readFileSync(packageJsonPath, 'utf8')
+      const packageJson = JSON.parse(packageJsonContent)
       const allDeps = { ...packageJson.dependencies, ...packageJson.devDependencies }
       
       knownVulnerablePackages.forEach(vuln => {

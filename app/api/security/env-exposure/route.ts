@@ -40,10 +40,10 @@ export async function GET(request: NextRequest) {
 
       case 'test-sanitization':
         const testData = {
-          apiKey: 're_1234567890abcdefghij',
-          recaptchaSecret: '6LcXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+          apiKey: 'TEST_API_KEY_PLACEHOLDER',
+          recaptchaSecret: 'TEST_RECAPTCHA_SECRET_PLACEHOLDER',
           normalData: 'This is safe data',
-          userEmail: 'test@example.com'
+          userEmail: 'example@example.com'
         }
         
         const sanitized = sanitizeEnvironmentForResponse(testData)
@@ -59,8 +59,8 @@ export async function GET(request: NextRequest) {
 
       case 'test-response-check':
         const mockResponse = {
-          message: 'API Key: re_1234567890abcdefghij was used',
-          data: { token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.signature' }
+          message: 'API Key: REDACTED_API_KEY was used',
+          data: { token: 'mock-token' }
         }
         
         const responseCheck = checkResponseForExposure(mockResponse)

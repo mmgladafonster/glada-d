@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
       case 'recent':
         const limit = parseInt(searchParams.get('limit') || '50')
         const recentAlerts = securityAlerts.getRecentAlerts(limit)
-        
+
         return NextResponse.json({
           success: true,
           alerts: recentAlerts,
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
       case 'stats':
         const stats = securityAlerts.getAlertStats()
-        
+
         return NextResponse.json({
           success: true,
           statistics: stats,
@@ -42,8 +42,12 @@ export async function GET(request: NextRequest) {
           )
         }
 
-        const severity = searchParams.get('severity') as 'low' | 'medium' | 'high' | 'critical' || 'medium'
-        
+        const severityParam = searchParams.get('severity')
+        const validSeverities = ['low', 'medium', 'high', 'critical'] as const
+        const severity = validSeverities.includes(severityParam as any)
+          ? severityParam as typeof validSeverities[number]
+          : 'medium'
+
         await securityAlerts.createAlert(
           severity,
           'system',
@@ -80,6 +84,34 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Define the expected configuration type
+interface AlertConfigUpdate {
+  enabled?: boolean
+  emailAlerts?: boolean
+  webhookAlerts?: boolean
+  alertThresholds?: {
+    critical?: number
+    high?: number
+    medium?: number
+    low?: number
+  }
+  emailRecipients?: string[]
+  webhookUrl?: string
+  cooldownPeriod?: number
+}
+
+// Type validator functions
+const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean'
+const isNumber = (value: unknown): value is number => typeof value === 'number' && !isNaN(value)
+const isString = (value: unknown): value is string => typeof value === 'string'
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every(item => typeof item === 'string')
+const isThresholds = (value: unknown): value is AlertConfigUpdate['alertThresholds'] =>
+  typeof value === 'object' && value !== null &&
+  Object.entries(value).every(([key, val]) =>
+    ['critical', 'high', 'medium', 'low'].includes(key) && isNumber(val)
+  )
+
 // Update alert configuration (POST)
 export async function POST(request: NextRequest) {
   // Only allow in development or with proper authentication
@@ -96,16 +128,72 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    
-    // Validate configuration
-    const allowedFields = ['enabled', 'emailAlerts', 'webhookAlerts', 'alertThresholds', 'emailRecipients', 'webhookUrl', 'cooldownPeriod']
-    const config: any = {}
-    
+
+    // Validate configuration with proper type checking
+    const allowedFields: (keyof AlertConfigUpdate)[] = [
+      'enabled', 'emailAlerts', 'webhookAlerts', 'alertThresholds',
+      'emailRecipients', 'webhookUrl', 'cooldownPeriod'
+    ]
+    const config: AlertConfigUpdate = {}
+    const validationErrors: string[] = []
+
     Object.keys(body).forEach(key => {
-      if (allowedFields.includes(key)) {
-        config[key] = body[key]
+      if (allowedFields.includes(key as keyof AlertConfigUpdate)) {
+        const value = body[key]
+
+        // Validate each field's value type
+        switch (key) {
+          case 'enabled':
+          case 'emailAlerts':
+          case 'webhookAlerts':
+            if (isBoolean(value)) {
+              config[key] = value
+            } else {
+              validationErrors.push(`${key} must be a boolean`)
+            }
+            break
+          case 'cooldownPeriod':
+            if (isNumber(value) && value > 0) {
+              config[key] = value
+            } else {
+              validationErrors.push(`${key} must be a positive number`)
+            }
+            break
+          case 'webhookUrl':
+            if (isString(value) && (value === '' || value.startsWith('http'))) {
+              config[key] = value
+            } else {
+              validationErrors.push(`${key} must be a valid URL or empty string`)
+            }
+            break
+          case 'emailRecipients':
+            if (isStringArray(value)) {
+              config[key] = value
+            } else {
+              validationErrors.push(`${key} must be an array of strings`)
+            }
+            break
+          case 'alertThresholds':
+            if (isThresholds(value)) {
+              config[key] = value
+            } else {
+              validationErrors.push(`${key} must be an object with numeric threshold values`)
+            }
+            break
+        }
       }
     })
+
+    if (validationErrors.length > 0) {
+      return NextResponse.json(
+        createSecureErrorResponse(
+          ERROR_MESSAGES.VALIDATION_ERROR,
+          ERROR_CODES.VALIDATION_FAILED,
+          `Configuration validation failed: ${validationErrors.join(', ')}`
+        ),
+        { status: 400 }
+      )
+    }
 
     securityAlerts.updateConfig(config)
 
