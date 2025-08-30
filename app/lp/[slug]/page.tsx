@@ -39,6 +39,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   return {
     title: `${capitalizedKeyword} - Glada Fönster`,
     description: `Professionell ${keywordData.Service} i ${keywordData.Location}. Få en gratis offert idag för ${capitalizedKeyword}.`,
+    alternates: {
+      canonical: `https://gladafonster.se/lp/${awaitedParams.slug}`,
+    },
   }
 }
 
