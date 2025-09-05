@@ -255,7 +255,7 @@ export default function ServicesPage() {
                     </div>
                   </div>
                   <p className="text-gray-600 text-sm mb-4">
-                    Rekommenderad frekvens: var {location.recommendedFrequency}:e vecka
+                    4 gånger per år
                   </p>
                   <div className="text-xs text-gray-500">
                     Specialisering: {location.serviceChallenges[0]}

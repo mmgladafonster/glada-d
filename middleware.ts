@@ -44,9 +44,10 @@ export function middleware(request: NextRequest) {
     }),
     
     // Cross-Origin policies
-    'Cross-Origin-Embedder-Policy': 'credentialless',
+    // Note: COEP disabled to allow YouTube embeds
+    // 'Cross-Origin-Embedder-Policy': 'credentialless',
     'Cross-Origin-Opener-Policy': 'same-origin',
-    'Cross-Origin-Resource-Policy': 'same-origin'
+    'Cross-Origin-Resource-Policy': 'cross-origin'
   }
 
   // Apply security headers
