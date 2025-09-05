@@ -8,7 +8,7 @@ export async function GET() {
 Allow: /
 Allow: /tjanster/
 
-# Block old LP pages during transition
+# Block old LP pages (removed system)
 Disallow: /lp/
 
 # Block Next.js internals
@@ -16,7 +16,7 @@ Disallow: /*?_rsc=
 Disallow: /_next/
 Disallow: /api/
 
-# Block test pages
+# Block test and debug pages
 Disallow: /test-*
 Disallow: /debug/
 
