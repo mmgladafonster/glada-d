@@ -10,9 +10,10 @@ interface OptimizedYouTubeVideoProps {
   videoId: string
   title: string
   description: string
+  priority?: boolean
 }
 
-export function OptimizedYouTubeVideo({ videoId, title }: OptimizedYouTubeVideoProps) {
+export function OptimizedYouTubeVideo({ videoId, title, priority = false }: OptimizedYouTubeVideoProps) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [isInView, setIsInView] = useState(false)
   const [thumbnailError, setThumbnailError] = useState(false)
@@ -75,7 +76,8 @@ export function OptimizedYouTubeVideo({ videoId, title }: OptimizedYouTubeVideoP
                     fill
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
                     onError={handleThumbnailError}
-                    loading="lazy"
+                    loading={priority ? "eager" : "lazy"}
+                    priority={priority}
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     quality={75}
                   />
@@ -120,7 +122,7 @@ export function OptimizedYouTubeVideo({ videoId, title }: OptimizedYouTubeVideoP
             /* YouTube iframe – only loads when user clicks play */
             <div className="relative w-full h-full">
               <iframe
-                src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&showinfo=0&controls=1&enablejsapi=1&origin=${typeof window !== "undefined" ? window.location.origin : ""}`}
+                src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&showinfo=0&controls=1&enablejsapi=1`}
                 title={title}
                 className="w-full h-full"
                 frameBorder="0"

@@ -30,7 +30,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/glada-fonster.ico" sizes="any" />
       </head>
-      <body>
+      <body suppressHydrationWarning={true}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

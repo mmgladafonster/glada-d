@@ -28,6 +28,7 @@ export const Header = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>
                 width={40}
                 height={40}
                 className="rounded-xl shadow-lg"
+                style={{ width: 'auto', height: 'auto' }}
               />
             </div>
             <div>

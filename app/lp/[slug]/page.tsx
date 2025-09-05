@@ -337,6 +337,7 @@ export default async function LandingPage({ params }: { params: { slug: string }
                 title: "Kundvittnesmål",
                 videoId: "ClLA9d42iZ0",
                 description: "Hör vad våra nöjda kunder säger om vår professionella service",
+                priority: true,
               },
               {
                 title: "Före & Efter Resultat",
