@@ -2,5 +2,15 @@
   "extends": [
     "next/core-web-vitals",
     "next/typescript"
+  ],
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "warn"
+  },
+  "ignorePatterns": [
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    ".next/**",
+    "node_modules/**"
   ]
 }

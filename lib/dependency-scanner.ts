@@ -249,39 +249,28 @@ class DependencySecurityScanner {
   ): Promise<void> {
     if (this.config.enableParallelProcessing) {
       // Run operations in parallel for better performance
-      const operations = [
-        this.runNpmAuditWithRetry().catch(error => ({ error, type: 'audit' })),
-        this.getDependencyInfoWithRetry().catch(error => ({ error, type: 'dependencies' })),
-        this.checkOutdatedPackagesWithRetry().catch(error => ({ error, type: 'outdated' }))
-      ]
+      const [auditResult, depResult, outdatedResult] = await Promise.allSettled([
+        this.runNpmAuditWithRetry(),
+        this.getDependencyInfoWithRetry(),
+        this.checkOutdatedPackagesWithRetry(),
+      ])
 
-      const results = await Promise.allSettled(operations)
-      
-      // Process audit results
-      const auditResult = results[0]
-      if (auditResult.status === 'fulfilled' && !('error' in auditResult.value)) {
+      if (auditResult.status === 'fulfilled') {
         vulnerabilities.push(...auditResult.value.vulnerabilities)
       } else {
-        const errorValue = auditResult.status === 'rejected' ? auditResult.reason : auditResult.value.error
-        errors.push(this.classifyError(errorValue, 'npm audit'))
+        errors.push(this.classifyError(auditResult.reason, 'npm audit'))
       }
 
-      // Process dependency info results
-      const depResult = results[1]
-      if (depResult.status === 'fulfilled' && !('error' in depResult.value)) {
+      if (depResult.status === 'fulfilled') {
         dependencies.push(...depResult.value)
       } else {
-        const errorValue = depResult.status === 'rejected' ? depResult.reason : depResult.value.error
-        errors.push(this.classifyError(errorValue, 'dependency info'))
+        errors.push(this.classifyError(depResult.reason, 'dependency info'))
       }
 
-      // Process outdated packages results
-      const outdatedResult = results[2]
-      if (outdatedResult.status === 'fulfilled' && !('error' in outdatedResult.value)) {
+      if (outdatedResult.status === 'fulfilled') {
         this.mergeOutdatedInfo(dependencies, outdatedResult.value)
       } else {
-        const errorValue = outdatedResult.status === 'rejected' ? outdatedResult.reason : outdatedResult.value.error
-        errors.push(this.classifyError(errorValue, 'outdated packages'))
+        errors.push(this.classifyError(outdatedResult.reason, 'outdated packages'))
       }
 
     } else {
