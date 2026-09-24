@@ -6,7 +6,7 @@ import { ERROR_MESSAGES, ERROR_CODES, logSecurityError, createSecureErrorRespons
 import { headers } from "next/headers"
 import { logger } from "@/lib/logger"
 import { recordRateLimitViolation, recordRecaptchaFailure, recordValidationError, recordEmailFailure } from "@/lib/security-monitor"
-import { sanitizeInput, isGdprConsentAccepted, normalizePropertyType } from "@/lib/contact-form-validation"
+import { sanitizeInput, isGdprConsentAccepted, normalizePropertyType, normalizeAndValidatePhone } from "@/lib/contact-form-validation"
 
 async function verifyRecaptcha(token: string, ipAddress: string) {
   const secretKey = process.env.RECAPTCHA_SECRET_KEY
@@ -226,7 +226,7 @@ export async function sendContactEmail(_prevState: unknown, formData: FormData) 
     const firstName = formData.get("firstName")?.toString()?.trim().slice(0, 50) || ""
     const lastName = formData.get("lastName")?.toString()?.trim().slice(0, 50) || ""
     // Email already extracted above for logging
-    const phone = formData.get("phone")?.toString()?.trim().slice(0, 20) || ""
+    const phoneRaw = formData.get("phone")?.toString()?.trim().slice(0, 40) || ""
     const address = formData.get("address")?.toString()?.trim().slice(0, 200) || ""
     const propertyTypeRaw = formData.get("propertyType")?.toString()?.trim().slice(0, 50) || ""
     const description = formData.get("description")?.toString()?.trim().slice(0, 1000) || ""
@@ -269,7 +269,7 @@ export async function sendContactEmail(_prevState: unknown, formData: FormData) 
     // Security: Removed detailed form data logging
 
     // Validate required fields
-    if (!sanitizedFirstName || !sanitizedLastName || !email || !phone) {
+    if (!sanitizedFirstName || !sanitizedLastName || !email || !phoneRaw) {
       logSecurityError(ERROR_CODES.VALIDATION_FAILED, "Required fields missing", email)
       recordValidationError("Required fields missing", email, ipAddress)
       return {
@@ -288,15 +288,16 @@ export async function sendContactEmail(_prevState: unknown, formData: FormData) 
       }
     }
 
-    // Validate phone format (Swedish phone numbers)
-    const phoneRegex = /^(\+46|0)[0-9\s\-]{8,15}$/
-    if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
-      logSecurityError(ERROR_CODES.VALIDATION_FAILED, `Invalid phone format: ${phone}`, email)
+    // Validate phone (lenient Swedish + international; shared helper)
+    const phoneResult = normalizeAndValidatePhone(phoneRaw)
+    if (!phoneResult.ok) {
+      logSecurityError(ERROR_CODES.VALIDATION_FAILED, `Invalid phone format: ${phoneRaw}`, email)
       return {
         success: false,
         message: ERROR_MESSAGES.INVALID_PHONE,
       }
     }
+    const phone = phoneResult.normalized
 
     // Validate name fields (no numbers or special characters)
     const nameRegex = /^[a-zA-ZåäöÅÄÖ\s\-']{1,50}$/
