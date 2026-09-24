@@ -6,9 +6,13 @@ import { logger } from "@/lib/logger"
 import { securityAlerts } from "@/lib/security-alerts"
 import { runDependencyScan } from "@/lib/dependency-scanner"
 import { getClientIp } from "@/utils/getClientIp"
+import { guardInternalRoute } from "@/lib/security/guard-internal-route"
 
 // Security dashboard endpoint - restricted access
 export async function GET() {
+  const blocked = guardInternalRoute()
+  if (blocked) return blocked
+
   // Rate limiting
   const ipAddress = await getClientIp()
 
@@ -160,4 +164,11 @@ function calculateSecurityScore(securitySummary: any, envValidation: any, alertS
 
   // Ensure score is between 0 and 100
   return Math.max(0, Math.min(100, score))
+}
+
+export async function POST() {
+  const blocked = guardInternalRoute()
+  if (blocked) return blocked
+  // No POST handler in development either — keep opaque.
+  return new NextResponse(null, { status: 404 })
 }

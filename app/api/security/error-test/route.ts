@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ERROR_MESSAGES, ERROR_CODES, createSecureErrorResponse, validateErrorMessage, formatSafeErrorMessage } from '@/lib/error-messages'
+import { guardInternalRoute } from '@/lib/security/guard-internal-route'
 
 // Test endpoint for error message security (development only)
 export async function GET(request: NextRequest) {
+  const blocked = guardInternalRoute()
+  if (blocked) return blocked
+
   // Only allow in development
   if (process.env.NODE_ENV !== 'development') {
     return NextResponse.json(
@@ -67,4 +71,11 @@ export async function GET(request: NextRequest) {
         usage: "Add ?type=<test-type> to test different scenarios"
       })
   }
+}
+
+export async function POST() {
+  const blocked = guardInternalRoute()
+  if (blocked) return blocked
+  // No POST handler in development either — keep opaque.
+  return new NextResponse(null, { status: 404 })
 }

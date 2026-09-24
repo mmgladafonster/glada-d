@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { securityAlerts } from '@/lib/security-alerts'
 import { ERROR_MESSAGES, ERROR_CODES, createSecureErrorResponse } from '@/lib/error-messages'
+import { guardInternalRoute } from '@/lib/security/guard-internal-route'
 
 // Security alerts management endpoint (development and admin only)
 export async function GET(request: NextRequest) {
+  const blocked = guardInternalRoute()
+  if (blocked) return blocked
+
   const { searchParams } = new URL(request.url)
   const action = searchParams.get('action')
 
@@ -114,6 +118,9 @@ const isThresholds = (value: unknown): value is AlertConfigUpdate['alertThreshol
 
 // Update alert configuration (POST)
 export async function POST(request: NextRequest) {
+  const blocked = guardInternalRoute()
+  if (blocked) return blocked
+
   // Only allow in development or with proper authentication
   if (process.env.NODE_ENV !== 'development') {
     return NextResponse.json(
