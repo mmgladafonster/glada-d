@@ -14,6 +14,8 @@ export const ERROR_MESSAGES = {
   REQUIRED_FIELDS: "Alla obligatoriska fält måste fyllas i.",
   FIELD_TOO_LONG: "Ett eller flera fält innehåller för mycket text.",
   INVALID_CHARACTERS: "Ogiltiga tecken upptäcktes i formuläret.",
+  GDPR_CONSENT_REQUIRED: "Du måste godkänna integritetspolicyn och GDPR för att skicka formuläret.",
+  INVALID_PROPERTY_TYPE: "Ogiltig fastighetstyp. Välj ett alternativ i listan.",
   
   // Rate limiting (clear but not revealing exact limits)
   RATE_LIMIT_EXCEEDED: "För många förfrågningar. Vänta 15 minuter innan du försöker igen.",

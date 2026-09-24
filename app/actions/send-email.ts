@@ -6,6 +6,7 @@ import { ERROR_MESSAGES, ERROR_CODES, logSecurityError, createSecureErrorRespons
 import { headers } from "next/headers"
 import { logger } from "@/lib/logger"
 import { recordRateLimitViolation, recordRecaptchaFailure, recordValidationError, recordEmailFailure } from "@/lib/security-monitor"
+import { sanitizeInput, isGdprConsentAccepted, normalizePropertyType } from "@/lib/contact-form-validation"
 
 async function verifyRecaptcha(token: string, ipAddress: string) {
   const secretKey = process.env.RECAPTCHA_SECRET_KEY
@@ -100,25 +101,9 @@ async function verifyRecaptcha(token: string, ipAddress: string) {
 export async function sendContactEmail(_prevState: unknown, formData: FormData) {
   // Security: Minimal logging for production
 
-  const recaptchaToken = formData.get("recaptchaToken") as string | null
-  
-  // Get email early for logging purposes
-  const email = formData.get("email")?.toString()?.trim() || ""
-
-  if (!recaptchaToken) {
-    return createSecureErrorResponse(
-      ERROR_MESSAGES.RECAPTCHA_MISSING,
-      ERROR_CODES.RECAPTCHA_VERIFICATION_FAILED,
-      "reCAPTCHA token missing from form submission",
-      email,
-      ipAddress
-    )
-  }
-
-  // Enhanced rate limiting check (email + IP) with spoofing protection
+  // Resolve client IP first so it is available for every early-return path
   const headersList = await headers()
-  
-  // Get IP address with spoofing protection
+
   function getClientIP(): string {
     // On Vercel, x-forwarded-for is the most reliable
     const forwardedFor = headersList.get('x-forwarded-for')
@@ -158,6 +143,23 @@ export async function sendContactEmail(_prevState: unknown, formData: FormData) 
   }
   
   const ipAddress = getClientIP()
+
+  const recaptchaToken = formData.get("recaptchaToken") as string | null
+  
+  // Get email early for logging purposes
+  const email = formData.get("email")?.toString()?.trim() || ""
+
+  if (!recaptchaToken) {
+    return createSecureErrorResponse(
+      ERROR_MESSAGES.RECAPTCHA_MISSING,
+      ERROR_CODES.RECAPTCHA_VERIFICATION_FAILED,
+      "reCAPTCHA token missing from form submission",
+      email,
+      ipAddress
+    )
+  }
+
+  // Enhanced rate limiting check (email + IP) with spoofing protection
   
   // Log IP detection for security monitoring (development only)
   if (process.env.NODE_ENV === 'development') {
@@ -226,21 +228,43 @@ export async function sendContactEmail(_prevState: unknown, formData: FormData) 
     // Email already extracted above for logging
     const phone = formData.get("phone")?.toString()?.trim().slice(0, 20) || ""
     const address = formData.get("address")?.toString()?.trim().slice(0, 200) || ""
-    const propertyType = formData.get("propertyType")?.toString()?.trim().slice(0, 50) || ""
+    const propertyTypeRaw = formData.get("propertyType")?.toString()?.trim().slice(0, 50) || ""
     const description = formData.get("description")?.toString()?.trim().slice(0, 1000) || ""
+    const gdprConsentRaw = formData.get("gdpr")
 
-    // Sanitize inputs to prevent XSS
-    const sanitizeInput = (input: string) => {
-      return input
-        .replace(/[<>]/g, '') // Remove potential HTML tags
-        .replace(/javascript:/gi, '') // Remove javascript: protocol
-        .replace(/on\w+=/gi, '') // Remove event handlers
+    // Server-side GDPR consent (checkbox name="gdpr"; checked value is typically "on")
+    if (!isGdprConsentAccepted(gdprConsentRaw)) {
+      logSecurityError(ERROR_CODES.VALIDATION_FAILED, "GDPR consent missing or false", email, ipAddress)
+      recordValidationError("GDPR consent missing", email, ipAddress)
+      return {
+        success: false,
+        message: ERROR_MESSAGES.GDPR_CONSENT_REQUIRED,
+      }
     }
 
     const sanitizedFirstName = sanitizeInput(firstName)
     const sanitizedLastName = sanitizeInput(lastName)
     const sanitizedAddress = sanitizeInput(address)
     const sanitizedDescription = sanitizeInput(description)
+
+    // Whitelist propertyType against the contact form <select> options, then sanitize
+    const normalizedPropertyType = normalizePropertyType(propertyTypeRaw)
+    if (normalizedPropertyType === null) {
+      logSecurityError(
+        ERROR_CODES.VALIDATION_FAILED,
+        `Invalid propertyType rejected: ${sanitizeInput(propertyTypeRaw)}`,
+        email,
+        ipAddress
+      )
+      recordValidationError("Invalid propertyType", email, ipAddress)
+      return {
+        success: false,
+        message: ERROR_MESSAGES.INVALID_PROPERTY_TYPE,
+      }
+    }
+    const sanitizedPropertyType = normalizedPropertyType
+      ? sanitizeInput(normalizedPropertyType)
+      : ""
 
     // Security: Removed detailed form data logging
 
@@ -353,11 +377,11 @@ export async function sendContactEmail(_prevState: unknown, formData: FormData) 
                           </td>
                         </tr>
                         ` : ''}
-                        ${propertyType ? `
+                        ${sanitizedPropertyType ? `
                         <tr>
                           <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
                             <strong style="color: #666;">Fastighetstyp:</strong>
-                            <div style="margin-top: 4px;">${propertyType}</div>
+                            <div style="margin-top: 4px;">${sanitizedPropertyType}</div>
                           </td>
                         </tr>
                         ` : ''}
@@ -410,8 +434,8 @@ KUNDUPPGIFTER
 Namn: ${sanitizedFirstName} ${sanitizedLastName}
 E-post: ${email}
 Telefon: ${phone}${sanitizedAddress ? `
-Adress: ${sanitizedAddress}` : ''}${propertyType ? `
-Fastighetstyp: ${propertyType}` : ''}${sanitizedDescription ? `
+Adress: ${sanitizedAddress}` : ''}${sanitizedPropertyType ? `
+Fastighetstyp: ${sanitizedPropertyType}` : ''}${sanitizedDescription ? `
 
 BESKRIVNING
 -----------
