@@ -200,10 +200,10 @@ export function sanitizeObjectForClient<T extends Record<string, any>>(obj: T): 
       if (typeof value === 'string') {
         const looksLikeSecret = value.length > 20 && /^[A-Za-z0-9+/=_-]+$/.test(value)
         if (!looksLikeSecret) {
-          sanitized[key as keyof T] = value
+          sanitized[key as keyof T] = value as T[keyof T]
         }
       } else {
-        sanitized[key as keyof T] = value
+        sanitized[key as keyof T] = value as T[keyof T]
       }
     }
   })

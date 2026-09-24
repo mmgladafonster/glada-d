@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import keywords from '@/lib/keywords.json';
 
+/** JSON may omit optional enrichment fields used by filters. */
+type KeywordRecord = (typeof keywords)[number] & {
+  Search_Intent?: string
+  Keyword_Type?: string
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -10,7 +16,7 @@ export async function GET(request: NextRequest) {
     const intent = searchParams.get('intent');
     const type = searchParams.get('type');
 
-    let filteredKeywords = keywords;
+    let filteredKeywords: KeywordRecord[] = keywords;
 
     // Apply filters
     if (service && service !== 'all') {

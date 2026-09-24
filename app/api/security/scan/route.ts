@@ -92,7 +92,9 @@ export async function POST(request: Request) {
         checks: response.checks.map(check => ({
           name: check.name,
           status: check.status,
-          severity: check.severity
+          severity: check.severity,
+          // Keep required field for type safety; omit details when not detailed
+          description: check.description,
         }))
       }
     }

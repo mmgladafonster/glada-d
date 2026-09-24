@@ -41,3 +41,4 @@ yarn-error.log*
 .kiro/settings/mcp.json
 .cursor/mcp.json
 .vscode/mcp.json
+*.tsbuildinfo

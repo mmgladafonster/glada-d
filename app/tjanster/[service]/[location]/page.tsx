@@ -7,8 +7,6 @@ import Link from 'next/link';
 import { 
   getLocationData, 
   getServiceData, 
-  LocationData, 
-  ServiceData 
 } from '@/lib/locationData';
 import { 
   generatePageMetadata, 
@@ -41,10 +39,10 @@ import {
 export const revalidate = 86400;
 
 interface PageProps {
-  params: {
+  params: Promise<{
     service: string;
     location: string;
-  };
+  }>;
 }
 
 // Generate static params for all valid combinations
@@ -54,7 +52,7 @@ export async function generateStaticParams() {
 
 // Generate metadata for SEO
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { service: serviceSlug, location: locationSlug } = params;
+  const { service: serviceSlug, location: locationSlug } = await params;
   
   // Convert URL params back to database keys
   const locationKey = getLocationKeyFromSlug(locationSlug);
@@ -119,7 +117,7 @@ function getLocationKeyFromSlug(slug: string): string {
 }
 
 export default async function ServiceLocationPage({ params }: PageProps) {
-  const { service: serviceSlug, location: locationSlug } = params;
+  const { service: serviceSlug, location: locationSlug } = await params;
   
   // Convert URL params back to database keys
   const locationKey = getLocationKeyFromSlug(locationSlug);

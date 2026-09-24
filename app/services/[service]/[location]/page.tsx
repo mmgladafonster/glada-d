@@ -4,10 +4,10 @@ import path from 'path';
 import { parse } from 'csv-parse/sync';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     service: string;
     location: string;
-  };
+  }>;
 }
 
 interface CSVRecord {

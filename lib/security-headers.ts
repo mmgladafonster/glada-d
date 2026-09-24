@@ -3,7 +3,7 @@
 interface SecurityHeaderCheck {
   name: string
   header: string
-  expectedValue?: string
+  expectedValue?: string | RegExp | ((value: string) => boolean) | string[]
   required: boolean
   description: string
 }
