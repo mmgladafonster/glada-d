@@ -36,3 +36,8 @@ yarn-error.log*
 # Cache
 .cache/
 .vercel
+
+# Local MCP configs (may contain API keys) — do not commit
+.kiro/settings/mcp.json
+.cursor/mcp.json
+.vscode/mcp.json
