@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runDependencyScan, runDependencyScanWithConfig, DependencySecurityScanner } from '@/lib/dependency-scanner'
 import { ERROR_MESSAGES, ERROR_CODES, createSecureErrorResponse } from '@/lib/error-messages'
+import { guardInternalRoute } from '@/lib/security/guard-internal-route'
 
 // Enhanced dependency security scanning endpoint
 export async function GET(request: NextRequest) {
+  const blocked = guardInternalRoute()
+  if (blocked) return blocked
+
   const { searchParams } = new URL(request.url)
   const action = searchParams.get('action')
   const forceRefresh = searchParams.get('force') === 'true'
@@ -203,6 +207,9 @@ export async function GET(request: NextRequest) {
 
 // Enhanced dependency scan trigger (POST)
 export async function POST(request: NextRequest) {
+  const blocked = guardInternalRoute()
+  if (blocked) return blocked
+
   try {
     const body = await request.json()
     const { 

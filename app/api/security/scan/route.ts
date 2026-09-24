@@ -3,9 +3,13 @@ import { runSecurityScan } from "@/lib/security-scanner"
 import { checkHealthRateLimit } from "@/lib/rate-limit"
 import { logger } from "@/lib/logger"
 import { getClientIp } from "@/utils/getClientIp"
+import { guardInternalRoute } from "@/lib/security/guard-internal-route"
 
 // Security scan endpoint - for automated security monitoring
 export async function GET() {
+  const blocked = guardInternalRoute()
+  if (blocked) return blocked
+
   // Rate limiting
   const ipAddress = await getClientIp()
 
@@ -50,6 +54,9 @@ export async function GET() {
 
 // POST endpoint for triggering manual scans with options
 export async function POST(request: Request) {
+  const blocked = guardInternalRoute()
+  if (blocked) return blocked
+
   // Rate limiting
   const ipAddress = await getClientIp()
 

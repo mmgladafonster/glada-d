@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { scanEnvironmentExposure, sanitizeEnvironmentForResponse, checkResponseForExposure } from '@/lib/env-exposure-scanner'
 import { getSafeEnvironmentInfo } from '@/lib/env-validator'
 import { ERROR_MESSAGES, ERROR_CODES, createSecureErrorResponse } from '@/lib/error-messages'
+import { guardInternalRoute } from '@/lib/security/guard-internal-route'
 
 // Environment exposure scanning endpoint (development only)
 export async function GET(request: NextRequest) {
+  const blocked = guardInternalRoute()
+  if (blocked) return blocked
+
   // Only allow in development
   if (process.env.NODE_ENV !== 'development') {
     return NextResponse.json(

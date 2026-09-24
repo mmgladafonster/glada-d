@@ -6,9 +6,13 @@ import { logger } from "@/lib/logger"
 import { securityAlerts } from "@/lib/security-alerts"
 import { runDependencyScan } from "@/lib/dependency-scanner"
 import { getClientIp } from "@/utils/getClientIp"
+import { guardInternalRoute } from "@/lib/security/guard-internal-route"
 
 // Security dashboard endpoint - restricted access
 export async function GET() {
+  const blocked = guardInternalRoute()
+  if (blocked) return blocked
+
   // Rate limiting
   const ipAddress = await getClientIp()
 
