@@ -13,6 +13,5 @@ export const CONFIG = {
   },
   analytics: {
     gaMeasurementId: "G-XG98JTZZ02",
-    clarityId: "qz0bmswope",
   },
 };

@@ -5,6 +5,33 @@ export function middleware(request: NextRequest) {
   // Create response
   const response = NextResponse.next()
 
+  // Environment-aware CSP extras (Vercel Live / preview toolbar)
+  const isDev = process.env.NODE_ENV === 'development'
+  const isPreview = process.env.VERCEL_ENV === 'preview'
+  const allowVercelToolbar = isDev || isPreview
+
+  const scriptSrc = [
+    "'self'",
+    "'unsafe-inline'",
+    ...(isDev ? ["'unsafe-eval'"] : []),
+    'https://www.google.com',
+    'https://www.gstatic.com',
+    'https://www.googletagmanager.com',
+    ...(allowVercelToolbar ? ['https://vercel.live'] : []),
+  ].join(' ')
+
+  // GA4 collect endpoints + reCAPTCHA; Vercel Live/Pusher only outside production
+  const connectSrc = [
+    "'self'",
+    'https://www.google.com',
+    'https://www.googletagmanager.com',
+    'https://region1.google-analytics.com',
+    'https://www.google-analytics.com',
+    ...(allowVercelToolbar
+      ? ['https://vercel.live', 'wss://ws-us3.pusher.com']
+      : []),
+  ].join(' ')
+
   // Security Headers
   const securityHeaders = {
     // Prevent clickjacking attacks
@@ -22,14 +49,15 @@ export function middleware(request: NextRequest) {
     // Permissions policy (restrict dangerous features)
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
     
-    // Content Security Policy (enhanced from previous config)
+    // Content Security Policy — no Clarity; Vercel Live only in preview/dev
     'Content-Security-Policy': [
       "default-src 'self'",
-      `script-src 'self' 'unsafe-inline' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ''} https://www.google.com https://www.gstatic.com https://www.googletagmanager.com https://www.clarity.ms https://scripts.clarity.ms https://vercel.live`,
+      `script-src ${scriptSrc}`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: https: blob:",
-      "connect-src 'self' https://www.google.com https://www.googletagmanager.com https://www.clarity.ms https://scripts.clarity.ms https://q.clarity.ms https://vercel.live wss://ws-us3.pusher.com https://region1.google-analytics.com",
+      `connect-src ${connectSrc}`,
+      // google.com: reCAPTCHA; youtube.com: homepage embeds (OptimizedYouTubeVideo)
       "frame-src 'self' https://www.google.com https://www.youtube.com",
       "object-src 'none'",
       "base-uri 'self'",
