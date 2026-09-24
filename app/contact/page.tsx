@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Phone, Mail, MapPin, Clock, ArrowRight } from "lucide-react"
 import Link from "next/link"
-import { useActionState, useCallback } from "react"
+import { useActionState, useCallback, useState } from "react"
 import { sendContactEmail } from "../actions/send-email"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -15,6 +15,7 @@ import { useRef, useLayoutEffect } from "react"
 import type { ElementType } from "react"
 import { useGoogleReCaptcha } from "react-google-recaptcha-v3"
 import { RecaptchaProvider } from "@/components/recaptcha-provider"
+import { normalizeAndValidatePhone } from "@/lib/contact-form-validation"
 
 /* Small presentational card – keeps main JSX simpler & avoids complex generic inference */
 function ContactCard({
@@ -65,10 +66,20 @@ function ContactFormComponent() {
     success: false,
     message: "",
   })
+  const [clientError, setClientError] = useState("")
   const { executeRecaptcha } = useGoogleReCaptcha()
 
   const handleFormAction = useCallback(
     async (formData: FormData) => {
+      setClientError("")
+      const phoneRaw = formData.get("phone")?.toString() ?? ""
+      const phoneResult = normalizeAndValidatePhone(phoneRaw)
+      if (!phoneResult.ok) {
+        setClientError("Vänligen ange ett giltigt telefonnummer (t.ex. 070-123 45 67).")
+        return
+      }
+      formData.set("phone", phoneResult.normalized)
+
       if (!executeRecaptcha) {
         console.error("Recaptcha not available")
         return
@@ -83,15 +94,15 @@ function ContactFormComponent() {
   return (
     <>
       <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 md:mb-6">Begär Offert</h3>
-      {state?.message && (
+      {(clientError || state?.message) && (
         <div
           className={`mb-6 p-4 rounded-lg ${
-            state.success
+            !clientError && state.success
               ? "bg-green-50 border border-green-200 text-green-800"
               : "bg-red-50 border border-red-200 text-red-800"
           }`}
         >
-          {state.message}
+          {clientError || state.message}
         </div>
       )}
       <form action={handleFormAction} className="space-y-4 md:space-y-6">
