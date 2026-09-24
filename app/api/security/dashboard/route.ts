@@ -165,3 +165,10 @@ function calculateSecurityScore(securitySummary: any, envValidation: any, alertS
   // Ensure score is between 0 and 100
   return Math.max(0, Math.min(100, score))
 }
+
+export async function POST() {
+  const blocked = guardInternalRoute()
+  if (blocked) return blocked
+  // No POST handler in development either — keep opaque.
+  return new NextResponse(null, { status: 404 })
+}

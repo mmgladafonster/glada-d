@@ -72,3 +72,10 @@ export async function GET(request: NextRequest) {
       })
   }
 }
+
+export async function POST() {
+  const blocked = guardInternalRoute()
+  if (blocked) return blocked
+  // No POST handler in development either — keep opaque.
+  return new NextResponse(null, { status: 404 })
+}
