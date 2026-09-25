@@ -117,7 +117,7 @@ export default function TestHomePage() {
         <div className="absolute bottom-20 right-10 h-48 w-48 animate-pulse delay-1000 rounded-full bg-gradient-to-br from-indigo-400/20 to-purple-600/20 blur-3xl md:h-96 md:w-96" />
 
         <div className="container relative z-10 mx-auto px-4">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
+          <div className="grid items-start gap-12 lg:grid-cols-2">
             {/* -- text column -- */}
             <div className="space-y-8 text-center lg:text-left">
               <Badge className="inline-flex items-center gap-2 border-0 bg-gradient-to-r from-blue-100 to-indigo-100 px-4 py-2 text-blue-800 shadow-lg shadow-blue-500/10">
@@ -240,14 +240,14 @@ export default function TestHomePage() {
             </div>
 
             {/* -- image column -- */}
-            <div className="relative order-first hidden lg:order-last lg:block">
+            <div className="relative order-first hidden lg:order-last lg:block lg:pt-2">
               <Image
                 src="/glada-car-background.png"
                 alt="Glada Fönster servicefordon"
-                width={500}
-                height={600}
+                width={560}
+                height={640}
                 priority
-                className="w-full rounded-3xl border border-white/20 shadow-2xl shadow-blue-500/20"
+                className="w-full rounded-3xl border border-white/20 object-cover shadow-2xl shadow-blue-500/20"
               />
 
               {/* floating rating badge (desktop only) */}
@@ -275,13 +275,6 @@ export default function TestHomePage() {
                 </div>
               </div>
 
-              {/* floating discount badge */}
-              <div className="absolute -top-4 -right-4 hidden animate-bounce rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 p-4 shadow-2xl shadow-yellow-500/20 md:block">
-                <div className="text-center text-white">
-                  <div className="text-2xl font-bold">20%</div>
-                  <div className="text-xs font-medium">RABATT</div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
