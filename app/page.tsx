@@ -7,7 +7,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { OptimizedYouTubeVideo } from "@/components/optimized-youtube-video"
 
-import { ArrowRight, Award, Building, CheckCircle, Home, Phone, Shield, Star, Users, Zap } from "lucide-react"
+import { ArrowRight, Building, Calendar, CheckCircle, ChevronRight, Clock, Home, Phone, Shield, Star, Zap } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -110,130 +110,72 @@ export default function HomePage() {
       <Header />
 
       {/* ─────────────────────  HERO  ───────────────────── */}
-      <section className="relative overflow-hidden py-12 md:py-20 lg:py-32">
-        {/* subtle gradient blobs */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-indigo-600/5 to-purple-600/5" />
-        <div className="absolute top-20 left-10 h-32 w-32 rounded-full bg-gradient-to-br from-blue-400/20 to-indigo-600/20 blur-3xl md:h-72 md:w-72" />
-        <div className="absolute bottom-20 right-10 h-48 w-48 animate-pulse delay-1000 rounded-full bg-gradient-to-br from-indigo-400/20 to-purple-600/20 blur-3xl md:h-96 md:w-96" />
+      <section className="relative overflow-hidden py-12 md:py-16 lg:py-24">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50/40 to-white" />
 
         <div className="container relative z-10 mx-auto px-4">
-          <div className="grid items-start gap-12 lg:grid-cols-2">
+          <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-12">
             {/* -- text column -- */}
-            <div className="space-y-8 text-center lg:text-left">
-              <Badge className="inline-flex items-center gap-2 border-0 bg-gradient-to-r from-blue-100 to-indigo-100 px-4 py-2 text-blue-800 shadow-lg shadow-blue-500/10">
-                <Award className="h-4 w-4" />
-                Sveriges Mest Pålitliga Fönsterputsare
+            <div className="space-y-6 text-center lg:space-y-7 lg:text-left">
+              <Badge
+                variant="outline"
+                className="inline-flex items-center gap-2 rounded-full border-blue-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-700 shadow-sm"
+              >
+                <Shield className="h-4 w-4 text-blue-600" />
+                Tryggt &amp; pålitligt – försäkrat &amp; kvalitetssäkrat
               </Badge>
 
-              <h1 className="text-2xl font-bold leading-tight md:text-3xl lg:text-5xl">
-                <span className="bg-gradient-to-r from-gray-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
-                  Dina Fönster:
-                </span>
+              <h1 className="text-2xl font-bold leading-tight text-slate-900 md:text-3xl lg:text-5xl">
+                Dina Fönster:
                 <br />
-                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  Så Rena att du Kommer Undra
-                </span>
+                Så Rena att du Kommer Undra
                 <br />
-                <span className="text-gray-900">om Glaset Finns Där. (Och Vi Garanterar Det!)</span>
+                om Glaset Finns Där. (Och Vi Garanterar Det!)
               </h1>
 
-              <p className="mx-auto max-w-2xl text-lg font-light leading-relaxed text-gray-600 md:text-xl lg:text-2xl lg:mx-0">
+              <p className="mx-auto max-w-2xl text-base font-light leading-relaxed text-slate-600 md:text-lg lg:mx-0 lg:text-xl">
                 Vi putsar inte bara fönster – vi förvandlar dem till speglar så klara att du kommer att svära på att du
                 kan se <span className="italic font-semibold text-blue-600">ABBA</span> sjunga &ldquo;Dancing
                 Queen&rdquo; i din trädgård.
               </p>
 
-              {/* service areas pill list */}
-              <div className="mb-8 rounded-2xl border border-white/20 bg-white/60 p-6 shadow-lg shadow-blue-500/5 backdrop-blur-sm">
-                <h3 className="mb-3 text-center text-sm font-bold text-gray-900 lg:text-left">🌟 Serviceområden</h3>
-                <div className="flex flex-wrap justify-center gap-2 lg:justify-start">
-                  {[
-                    "Varberg",
-                    "Åskloster",
-                    "Väröbacka",
-                    "Bua",
-                    "Frillesås",
-                    "Åsa",
-                    "Kullavik",
-                    "Särö",
-                    "Kungsbacka",
-                    "Billdal",
-                    "Askim",
-                    "Mölndal",
-                    "Göteborg",
-                    "Kungälv",
-                    "Torslanda",
-                  ].map((city) => (
-                    <span
-                      key={city}
-                      className="rounded-full border border-blue-200 bg-gradient-to-r from-blue-100 to-indigo-100 px-3 py-1 text-xs font-medium text-blue-800 transition-colors duration-300 hover:from-blue-200 hover:to-indigo-200"
-                    >
-                      {city}
-                    </span>
-                  ))}
-                  <span className="rounded-full border border-purple-200 bg-gradient-to-r from-purple-100 to-pink-100 px-3 py-1 text-xs font-bold text-purple-800">
-                    + Utanför Göteborg
-                  </span>
-                </div>
-              </div>
-
-              {/* CTA buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link href="/contact#request-quote-form">
+              {/* CTA buttons — mockup A */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
+                <Link href="/contact#request-quote-form" className="inline-flex">
                   <Button
                     size="lg"
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-base md:text-lg px-6 md:px-8 py-4 md:py-6 shadow-xl shadow-blue-500/25 hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-300 hover:scale-105 group"
+                    className="h-auto w-full rounded-2xl bg-blue-600 px-6 py-4 text-base font-semibold text-white hover:bg-blue-700 sm:w-auto md:px-8"
                   >
+                    <Calendar className="mr-2 h-5 w-5" />
                     Få Gratis Offert
-                    <ArrowRight className="h-4 w-4 md:h-5 md:w-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                    <ChevronRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-                <a href="tel:0728512420">
+                <a href="tel:0728512420" className="inline-flex">
                   <Button
                     size="lg"
-                    className="bg-white text-blue-600 hover:bg-gray-100 text-base md:text-lg px-6 md:px-8 py-4 md:py-6 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105 font-semibold"
+                    variant="outline"
+                    className="h-auto w-full rounded-2xl border border-gray-200 bg-white px-6 py-4 text-base font-semibold text-slate-800 hover:bg-slate-50 sm:w-auto md:px-8"
                   >
-                    <Phone className="h-4 w-4 md:h-5 md:w-5 mr-2" />
-                    Ring: 072-8512420
+                    <Phone className="mr-2 h-5 w-5 text-blue-600" />
+                    Ring 072-8512420
                   </Button>
                 </a>
               </div>
 
-              {/* quick badges */}
-              <div className="grid grid-cols-1 gap-3 pt-6 sm:grid-cols-3 md:gap-4">
+              {/* compact trust pills */}
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1 lg:justify-start">
                 {[
-                  {
-                    icon: Shield,
-                    title: "Försäkrad",
-                    subtitle: "& Certifierad",
-                    color: "from-green-500 to-emerald-600",
-                  },
-                  {
-                    icon: CheckCircle,
-                    title: "100% Garanti",
-                    subtitle: "Eller pengarna tillbaka",
-                    color: "from-blue-500 to-indigo-600",
-                  },
-                  {
-                    icon: Zap,
-                    title: "Samma Dag",
-                    subtitle: "Service tillgänglig",
-                    color: "from-orange-500 to-red-600",
-                  },
-                ].map((item, idx) => (
+                  { icon: Shield, label: "Försäkrad" },
+                  { icon: CheckCircle, label: "100% Garanti" },
+                  { icon: Clock, label: "Samma Dag" },
+                ].map((item) => (
                   <div
-                    key={idx}
-                    className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white/60 p-4 shadow-lg shadow-blue-500/5 backdrop-blur-sm"
+                    key={item.label}
+                    className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm"
                   >
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br ${item.color}`}
-                    >
-                      <item.icon className="h-4 w-4 text-white" />
-                    </div>
-                    <div className="text-left">
-                      <div className="text-sm font-semibold text-gray-900">{item.title}</div>
-                      <div className="text-xs text-gray-600">{item.subtitle}</div>
-                    </div>
+                    <item.icon className="h-4 w-4 text-blue-600" />
+                    {item.label}
                   </div>
                 ))}
               </div>
@@ -241,40 +183,67 @@ export default function HomePage() {
 
             {/* -- image column -- */}
             <div className="relative order-first hidden lg:order-last lg:block lg:pt-2">
-              <Image
-                src="/glada-car-background.png"
-                alt="Glada Fönster servicefordon"
-                width={560}
-                height={640}
-                priority
-                className="w-full rounded-3xl border border-white/20 object-cover shadow-2xl shadow-blue-500/20"
-              />
-
-              {/* floating rating badge (desktop only) */}
-              <div className="absolute -bottom-8 -left-8 hidden bg-gradient-to-br from-white to-blue-50 p-6 shadow-2xl shadow-blue-500/20 backdrop-blur-sm md:block">
-                <div className="flex items-center gap-4">
-                  <div className="-ml-2 flex -space-x-3">
-                    {[1, 2, 3, 4].map((n) => (
-                      <div
-                        key={n}
-                        className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg"
-                      >
-                        <Users className="h-5 w-5 text-white" />
-                      </div>
-                    ))}
-                  </div>
-                  <div>
-                    <div className="mb-1 flex items-center gap-1">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Star key={s} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      ))}
-                    </div>
-                    <p className="text-xs font-semibold text-gray-900">2500+ Nöjda Kunder</p>
-                    <p className="text-xs text-gray-600">Genomsnitt 4.9 / 5</p>
-                  </div>
-                </div>
+              <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl border border-white/20 shadow-2xl shadow-blue-500/20">
+                <Image
+                  src="/glada-car-background.png"
+                  alt="Glada Fönster servicefordon"
+                  fill
+                  priority
+                  className="object-cover object-center"
+                  sizes="(min-width: 1024px) 40vw, 100vw"
+                />
               </div>
 
+              {/* floating rating card */}
+              <div className="absolute -bottom-6 -left-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-xl md:-left-6">
+                <div className="mb-1 flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star key={s} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                  <span className="ml-1 text-sm font-semibold text-slate-900">4.9</span>
+                </div>
+                <p className="text-xs font-semibold text-slate-900">2500+ Nöjda Kunder</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ────────────────────  SERVICE AREAS (moved from hero)  ───────────────────── */}
+      <section className="relative border-y border-blue-100/60 bg-white/70 py-8 md:py-10">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-5xl text-center">
+            <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-slate-700 md:text-base">
+              Serviceområden
+            </h2>
+            <div className="flex flex-wrap justify-center gap-2">
+              {[
+                "Varberg",
+                "Åskloster",
+                "Väröbacka",
+                "Bua",
+                "Frillesås",
+                "Åsa",
+                "Kullavik",
+                "Särö",
+                "Kungsbacka",
+                "Billdal",
+                "Askim",
+                "Mölndal",
+                "Göteborg",
+                "Kungälv",
+                "Torslanda",
+              ].map((city) => (
+                <span
+                  key={city}
+                  className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-800"
+                >
+                  {city}
+                </span>
+              ))}
+              <span className="rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-bold text-purple-800">
+                + Utanför Göteborg
+              </span>
             </div>
           </div>
         </div>
